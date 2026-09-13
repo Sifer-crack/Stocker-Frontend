@@ -9,8 +9,10 @@ import ShoppingRoute from './pages/ShoppingRoute'
 import GroceryBudget from './pages/GroceryBudget'
 import Pantry from './pages/Pantry'
 import Account from './pages/Account'
+import { LandingPage } from './landing-page'
 
 function App() {
+  const [showLanding, setShowLanding] = useState(true)
   const [selectedOption, setSelectedOption] = useState('')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [items, setItems] = useState<string[]>([])
@@ -35,6 +37,10 @@ const estimatedCost = items.reduce((total, item) => {
   const price = itemPrices[item.toLowerCase()] ?? 5.00
   return total + price
 }, 0)
+
+  if (showLanding) {
+    return <LandingPage onGetStarted={() => setShowLanding(false)} />
+  }
 
   if (!isLoggedIn) {
     return <Login onLogin={() => setIsLoggedIn(true)} />
