@@ -127,6 +127,16 @@
   background: #157347;
 }
 
+.remove-pantry-button {
+  background: transparent;
+  color: #b42318;
+  border: 1px solid #d92d20;
+}
+
+.remove-pantry-button:hover {
+  background: #fef3f2;
+}
+
 @media (max-width: 800px) {
   .pantry-header,
   .pantry-content {

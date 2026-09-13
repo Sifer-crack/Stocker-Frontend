@@ -33,6 +33,9 @@ function Pantry({
   const [pantryItems, setPantryItems] = useState<PantryDisplayItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newItemName, setNewItemName] = useState('')
+  const [newItemQuantity, setNewItemQuantity] = useState(1)
   // Temporary until the authentication service provides the logged-in user's UUID.
   const TEMP_USER_ID = '00000000-0000-0000-0000-000000000001'
   useEffect(() => {
@@ -76,6 +79,33 @@ function Pantry({
   loadPantry()
 }, [])
 
+const handleAddPantryItem = () => {
+  const trimmedName = newItemName.trim()
+
+  if (!trimmedName || newItemQuantity < 1) {
+    return
+  }
+
+  const newItem: PantryDisplayItem = {
+    id: crypto.randomUUID(),
+    name: trimmedName,
+    quantity: newItemQuantity,
+    unit: '',
+    lowStock: newItemQuantity <= 1,
+  }
+
+  setPantryItems((currentItems) => [...currentItems, newItem])
+  setNewItemName('')
+  setNewItemQuantity(1)
+  setShowAddForm(false)
+}
+
+const handleRemovePantryItem = (id: string) => {
+  setPantryItems((currentItems) =>
+    currentItems.filter((item) => item.id !== id)
+  )
+}
+
   return (
     <main className="pantry-page">
       <header className="pantry-header">
@@ -87,10 +117,35 @@ function Pantry({
         <button
           type="button"
           className="add-pantry-button"
+          onClick={() => setShowAddForm(!showAddForm)}
         >
-          + Add Pantry Item
+          {showAddForm ? 'Cancel' : '+ Add Pantry Item'}
         </button>
       </header>
+        {showAddForm && (
+          <div className="add-pantry-form">
+            <input
+              type="text"
+              placeholder="Item name"
+              value={newItemName}
+              onChange={(event) => setNewItemName(event.target.value)}
+            />
+            <input
+              type="number"
+              min="1"
+              value={newItemQuantity}
+              onChange={(event) =>
+                setNewItemQuantity(Number(event.target.value))
+              }
+            />
+            <button
+              type="button"
+              onClick={handleAddPantryItem}
+            >
+              Add Item
+            </button>
+          </div>
+        )}
 
       <div className="pantry-content">
         {loading && <p>Loading pantry...</p>}
@@ -126,14 +181,23 @@ function Pantry({
                 )}
               </div>
 
-              <button
-                type="button"
-                onClick={() =>
-                  onAddToShoppingList(item.name)
-                }
-              >
-                Add to Shopping List
-              </button>
+              <div className="pantry-item-actions">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onAddToShoppingList(item.name)
+                  }
+                >
+                  Add to Shopping List
+                </button>
+                <button
+                  type="button"
+                  className="remove-pantry-button"
+                  onClick={() => handleRemovePantryItem(item.id)}
+                >
+                  Remove
+                </button>
+              </div>
             </div>
           ))}
         </section>
