@@ -36,6 +36,8 @@ function Pantry({
   const [showAddForm, setShowAddForm] = useState(false)
   const [newItemName, setNewItemName] = useState('')
   const [newItemQuantity, setNewItemQuantity] = useState(1)
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [editingQuantity, setEditingQuantity] = useState(1)
   // Temporary until the authentication service provides the logged-in user's UUID.
   const TEMP_USER_ID = '00000000-0000-0000-0000-000000000001'
   useEffect(() => {
@@ -106,6 +108,29 @@ const handleRemovePantryItem = (id: string) => {
   )
 }
 
+const handleStartEdit = (item: PantryDisplayItem) => {
+  setEditingItemId(item.id)
+  setEditingQuantity(item.quantity)
+}
+
+const handleSaveEdit = (id: string) => {
+  if (editingQuantity < 1) {
+    return
+  }
+  setPantryItems((currentItems) =>
+    currentItems.map((item) =>
+      item.id === id
+        ? {
+            ...item,
+            quantity: editingQuantity,
+            lowStock: editingQuantity <= 1,
+          }
+        : item
+    )
+  )
+  setEditingItemId(null)
+}
+
   return (
     <main className="pantry-page">
       <header className="pantry-header">
@@ -172,7 +197,18 @@ const handleRemovePantryItem = (id: string) => {
             >
               <div>
                 <h3>{item.name}</h3>
-                <p>Quantity: {item.quantity}</p>
+                {editingItemId === item.id ? (
+                  <input
+                    type="number"
+                    min="1"
+                    value={editingQuantity}
+                    onChange={(event) =>
+                      setEditingQuantity(Number(event.target.value))
+                    }
+                  />
+                ) : (
+                  <p>Quantity: {item.quantity}</p>
+                )}
 
                 {item.lowStock && (
                   <span className="low-stock">
@@ -190,6 +226,21 @@ const handleRemovePantryItem = (id: string) => {
                 >
                   Add to Shopping List
                 </button>
+                {editingItemId === item.id ? (
+                  <button
+                    type="button"
+                    onClick={() => handleSaveEdit(item.id)}
+                  >
+                    Save
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleStartEdit(item)}
+                  >
+                    Edit
+                  </button>
+                )}
                 <button
                   type="button"
                   className="remove-pantry-button"
