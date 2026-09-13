@@ -23,6 +23,13 @@ function Pantry({
           <h1>My Pantry</h1>
           <p>Keep track of what you already have at home.</p>
         </div>
+
+        <button
+          type="button"
+          className="add-pantry-button"
+        >
+          + Add Pantry Item
+        </button>
       </header>
 
       <div className="pantry-content">
