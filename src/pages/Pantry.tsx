@@ -38,13 +38,15 @@ function Pantry({
   const [newItemQuantity, setNewItemQuantity] = useState(1)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editingQuantity, setEditingQuantity] = useState(1)
+  const[newItemUnit, setNewItemUnit] = useState('');
   // Temporary until the authentication service provides the logged-in user's UUID.
   const TEMP_USER_ID = '00000000-0000-0000-0000-000000000001'
-  useEffect(() => {
+
   const loadPantry = async () => {
     try {
       setLoading(true)
       setError('')
+
       const pantryResponse = await fetch(
         `http://localhost:8087/pantry-items?userId=${TEMP_USER_ID}`
       )
@@ -52,15 +54,19 @@ function Pantry({
         throw new Error('Could not load pantry')
       }
       const pantryData: PantryApiItem[] = await pantryResponse.json()
+
       const displayItems = await Promise.all(
         pantryData.map(async (pantryItem) => {
           const productResponse = await fetch(
             `http://localhost:8082/products/${pantryItem.product_id}`
           )
+
           if (!productResponse.ok) {
             throw new Error('Could not load product')
           }
+
           const product: ProductApiItem = await productResponse.json()
+
           return {
             id: pantryItem.pantry_item_id,
             name: product.name,
@@ -78,28 +84,50 @@ function Pantry({
       setLoading(false)
     }
   }
-  loadPantry()
-}, [])
+  useEffect(() => {
+    loadPantry()
+  }, [])
 
-const handleAddPantryItem = () => {
-  const trimmedName = newItemName.trim()
+  const handleAddPantryItem = async () => {
+    const trimmedName = newItemName.trim()
+    const trimmedUnit = newItemUnit.trim()
 
-  if (!trimmedName || newItemQuantity < 1) {
-    return
+    if (!trimmedName || !trimmedUnit || newItemQuantity < 1) {
+      return
   }
 
-  const newItem: PantryDisplayItem = {
-    id: crypto.randomUUID(),
-    name: trimmedName,
-    quantity: newItemQuantity,
-    unit: '',
-    lowStock: newItemQuantity <= 1,
-  }
+    try {
+      setError('')
 
-  setPantryItems((currentItems) => [...currentItems, newItem])
-  setNewItemName('')
-  setNewItemQuantity(1)
-  setShowAddForm(false)
+      const params = new URLSearchParams({
+        userId: TEMP_USER_ID, // TODO: replace with real userid
+        productName: trimmedName,
+        unit: trimmedUnit,
+        quantity: String(newItemQuantity),
+      })
+
+      const response = await fetch(
+          `http://localhost:8087/pantry-items?${params.toString()}`,
+          {
+            method: 'POST',
+          }
+      )
+
+      if (!response.ok) {
+        throw new Error('Could not add pantry item')
+      }
+
+      // reload pantry from backend
+      await loadPantry()
+
+      setNewItemName('')
+      setNewItemUnit('')
+      setNewItemQuantity(1)
+      setShowAddForm(false)
+    } catch (err) {
+      console.error(err)
+      setError('Unable to add pantry item')
+    }
 }
 
 const handleRemovePantryItem = (id: string) => {
@@ -155,6 +183,13 @@ const handleSaveEdit = (id: string) => {
               value={newItemName}
               onChange={(event) => setNewItemName(event.target.value)}
             />
+            <input
+                type="text"
+                placeholder="Unit"
+                value={newItemUnit}
+                onChange={(event) => setNewItemUnit(event.target.value)}
+            />
+
             <input
               type="number"
               min="1"
