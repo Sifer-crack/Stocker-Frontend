@@ -1,0 +1,269 @@
+.options-page {
+  min-height: 100vh;
+  background: #f7f8f5;
+  color: #173022;
+}
+
+.options-header {
+  padding: 28px 44px;
+  background: #ffffff;
+  border-bottom: 1px solid #dfe5dc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.options-header h1 {
+  margin: 0 0 6px;
+  font-size: 34px;
+  color: #173022;
+}
+
+.options-header p {
+  margin: 0;
+  color: #718075;
+  font-size: 17px;
+}
+
+.options-header-actions {
+  display: flex;
+  gap: 14px;
+}
+
+.options-header-actions input {
+  width: 280px;
+  padding: 14px 16px;
+  border: 1px solid #d7dfd4;
+  border-radius: 14px;
+  background: #fbfcfa;
+  color: #173022;
+  font-size: 16px;
+}
+
+.options-header-actions button {
+  padding: 14px 22px;
+  border: none;
+  border-radius: 14px;
+  background: #198754;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.options-content {
+  padding: 36px 44px;
+}
+
+.option-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.option-tabs button {
+  padding: 14px 26px;
+  border: 1px solid #d4ddd1;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #516456;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.option-tabs button.active {
+  background: #198754;
+  color: #ffffff;
+  border-color: #198754;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 26px;
+  align-items: start;
+}
+
+.option-card {
+  background: #ffffff;
+  border: 1px solid #dfe5dc;
+  border-radius: 24px;
+  padding: 28px;
+}
+
+.option-card.best-option {
+  background: #198754;
+  color: #ffffff;
+  border-color: #198754;
+  box-shadow: 0 18px 40px rgba(25, 135, 84, 0.16);
+}
+
+.option-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.option-card-top > strong {
+  color: #198754;
+}
+
+.best-option .option-card-top > strong {
+  color: #ffffff;
+}
+
+.option-label {
+  display: inline-block;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: #edf2ec;
+  color: #198754;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+
+.best-option .option-label {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.option-card h2 {
+  margin: 0 0 14px;
+  font-size: 28px;
+  color: #173022;
+}
+
+.best-option h2 {
+  color: #ffffff;
+}
+
+.store-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.store-tags span {
+  padding: 7px 11px;
+  border-radius: 10px;
+  background: #edf2ec;
+  color: #173022;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.best-option .store-tags span {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.lowest-cost {
+  margin: 0 0 20px;
+  font-weight: 700;
+}
+
+.price-row,
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.price-row {
+  margin-bottom: 14px;
+  color: #718075;
+}
+
+.price-row strong {
+  color: #173022;
+}
+
+.best-option .price-row,
+.best-option .price-row strong {
+  color: #ffffff;
+}
+
+.option-card hr {
+  border: none;
+  border-top: 1px solid #dfe5dc;
+  margin: 18px 0;
+}
+
+.best-option hr {
+  border-top-color: rgba(255, 255, 255, 0.28);
+}
+
+.total-row {
+  align-items: center;
+  margin-bottom: 22px;
+  font-weight: 800;
+}
+
+.total-row strong {
+  font-size: 30px;
+}
+
+.option-card > button {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #d4ddd1;
+  background: #ffffff;
+  color: #198754;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.best-option > button {
+  border: none;
+}
+
+.options-empty {
+  background: #ffffff;
+  border: 1px solid #dfe5dc;
+  border-radius: 24px;
+  padding: 36px;
+  text-align: center;
+}
+
+.options-empty h2 {
+  margin-top: 0;
+}
+
+.options-empty button {
+  margin-top: 18px;
+  padding: 14px 22px;
+  border: none;
+  border-radius: 14px;
+  background: #198754;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .options-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .options-header-actions {
+    width: 100%;
+  }
+
+  .options-header-actions input {
+    flex: 1;
+    width: auto;
+  }
+}
