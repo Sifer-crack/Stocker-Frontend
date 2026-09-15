@@ -38,8 +38,21 @@ function StoreRecommendations({
       thirdTotal: '$94.20',
 
       bestTags: [
-      `PAK'nSAVE · ${Math.max(items.length - 1, 1)} items`,
-      'Woolworths · 1 item',
+
+        `PAK'nSAVE · ${Math.max(items.length - 1, 0)} items`,
+
+        'Woolworths · 1 item',
+
+      ],
+      bestStoreItems: [
+        {
+          store: "PAK'nSAVE",
+          items: items.slice(0, -1),
+        },
+        {
+          store: 'Woolworths',
+          items: items.slice(-1),
+        },
       ],
       secondTags: [
         `PAK'nSAVE · ${items.length} items`,
@@ -73,6 +86,12 @@ function StoreRecommendations({
       bestTags: [
         `PAK'nSAVE · ${items.length} items`,
         'Click & Collect',
+      ],
+      bestStoreItems: [
+        {
+          store: "PAK'nSAVE",
+          items: items,
+        },
       ],
       secondTags: [
         `Woolworths · ${items.length} items`,
@@ -108,6 +127,12 @@ function StoreRecommendations({
       bestTags: [
         `New World · ${items.length} items`,
         'Delivery',
+      ],
+      bestStoreItems: [
+        {
+          store: 'New World',
+          items: items,
+        },
       ],
       secondTags: [
         `Woolworths · ${items.length} items`,
@@ -188,6 +213,26 @@ function StoreRecommendations({
               <div className="store-tags">
                 {currentMode.bestTags.map((tag) => (
                   <span key={tag}>{tag}</span>
+                ))}
+              </div>
+              
+              <div className="store-item-breakdown">
+                {currentMode.bestStoreItems.map((storeGroup) => (
+                  <div key={storeGroup.store} className="store-item-group">
+                    <strong>{storeGroup.store}</strong>
+
+                    {storeGroup.items.length > 0 ? (
+                      <ul>
+                        {storeGroup.items.map((item, index) => (
+                          <li key={`${storeGroup.store}-${item}-${index}`}>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>No items</p>
+                    )}
+                  </div>
                 ))}
               </div>
 
