@@ -15,36 +15,110 @@ function StoreRecommendations({
   const [shoppingMode, setShoppingMode] = useState<
   'in-store' | 'click-collect' | 'delivery'
 >('in-store')
-  const modeData = {
-    'in-store': {
-      bestTitle: "PAK'nSAVE + Woolworths",
-      bestGroceries: '$74.30',
-      bestExtraLabel: 'Travel',
-      bestExtra: '$7.50',
-      bestTotal: '$81.80',
-      bestSavings: '$12.40',
+const [testScenario, setTestScenario] = useState<
+  'single-store' | 'multi-store' | 'travel-override'
+>('multi-store')
+const scenarioData = {
+  'single-store': {
+    paknsave: {
+      groceries: 80.00,
+      travel: 4.00,
+    },
+    woolworths: {
+      groceries: 86.00,
+      travel: 3.00,
+    },
+    multiStore: {
+      groceries: 78.00,
+      travel: 12.00,
+    },
+  },
 
-      secondTitle: "PAK'nSAVE only",
-      secondGroceries: '$86.40',
-      secondExtraLabel: 'Travel',
-      secondExtra: '$3.20',
-      secondTotal: '$89.60',
-      secondSavings: '$4.60',
+  'multi-store': {
+    paknsave: {
+      groceries: 86.40,
+      travel: 3.20,
+    },
+    woolworths: {
+      groceries: 89.90,
+      travel: 3.50,
+    },
+    multiStore: {
+      groceries: 74.30,
+      travel: 7.50,
+    },
+  },
 
-      thirdTitle: 'New World',
-      thirdGroceries: '$91.50',
-      thirdExtraLabel: 'Travel',
-      thirdExtra: '$2.70',
-      thirdTotal: '$94.20',
+  'travel-override': {
+    paknsave: {
+      groceries: 82.00,
+      travel: 3.00,
+    },
+    woolworths: {
+      groceries: 87.00,
+      travel: 4.00,
+    },
+    multiStore: {
+      groceries: 76.00,
+      travel: 12.00,
+    },
+  },
+}
 
-      bestTags: [
+const scenario = scenarioData[testScenario]
+const paknsaveTotal =
+  scenario.paknsave.groceries + scenario.paknsave.travel
+const woolworthsTotal =
+  scenario.woolworths.groceries + scenario.woolworths.travel
+const multiStoreTotal =
+  scenario.multiStore.groceries + scenario.multiStore.travel
 
+const rankedInStoreOptions = [
+  {
+    type: 'paknsave',
+    title: "PAK'nSAVE only",
+    groceries: scenario.paknsave.groceries,
+    travel: scenario.paknsave.travel,
+    total: paknsaveTotal,
+  },
+  {
+    type: 'woolworths',
+    title: 'Woolworths only',
+    groceries: scenario.woolworths.groceries,
+    travel: scenario.woolworths.travel,
+    total: woolworthsTotal,
+  },
+  {
+    type: 'multi-store',
+    title: "PAK'nSAVE + Woolworths",
+    groceries: scenario.multiStore.groceries,
+    travel: scenario.multiStore.travel,
+    total: multiStoreTotal,
+  },
+].sort((a, b) => a.total - b.total)
+
+const secondInStoreOption = rankedInStoreOptions[1]
+const thirdInStoreOption = rankedInStoreOptions[2]
+const cheapestTotal = Math.min(
+  paknsaveTotal,
+  woolworthsTotal,
+  multiStoreTotal
+)
+
+const multiStoreIsBest = multiStoreTotal === cheapestTotal
+const paknsaveIsBest = paknsaveTotal === cheapestTotal
+
+const inStoreRecommendation = multiStoreIsBest
+  ? {
+      title: "PAK'nSAVE + Woolworths",
+      groceries: scenario.multiStore.groceries,
+      travel: scenario.multiStore.travel,
+      total: multiStoreTotal,
+      tags: [
         `PAK'nSAVE · ${Math.max(items.length - 1, 0)} items`,
-
         'Woolworths · 1 item',
-
       ],
-      bestStoreItems: [
+      storeItems: [
         {
           store: "PAK'nSAVE",
           items: items.slice(0, -1),
@@ -54,12 +128,89 @@ function StoreRecommendations({
           items: items.slice(-1),
         },
       ],
-      secondTags: [
-        `PAK'nSAVE · ${items.length} items`,
-      ],
-      thirdTags: [
-        `New World · ${items.length} items`,
-      ],
+    }
+  : paknsaveIsBest
+    ? {
+        title: "PAK'nSAVE only",
+        groceries: scenario.paknsave.groceries,
+        travel: scenario.paknsave.travel,
+        total: paknsaveTotal,
+        tags: [`PAK'nSAVE · ${items.length} items`],
+        storeItems: [
+          {
+            store: "PAK'nSAVE",
+            items: items,
+          },
+        ],
+      }
+    : {
+        title: 'Woolworths only',
+        groceries: scenario.woolworths.groceries,
+        travel: scenario.woolworths.travel,
+        total: woolworthsTotal,
+        tags: [`Woolworths · ${items.length} items`],
+        storeItems: [
+          {
+            store: 'Woolworths',
+            items: items,
+          },
+        ],
+      }
+
+  const modeData = {
+    'in-store': {
+    bestTitle: inStoreRecommendation.title,
+
+    bestGroceries: `$${inStoreRecommendation.groceries.toFixed(2)}`,
+
+    bestExtraLabel: 'Travel',
+
+    bestExtra: `$${inStoreRecommendation.travel.toFixed(2)}`,
+
+    bestTotal: `$${inStoreRecommendation.total.toFixed(2)}`,
+
+    bestSavings: `$${(
+      Math.max(paknsaveTotal, woolworthsTotal, multiStoreTotal) -
+      inStoreRecommendation.total
+    ).toFixed(2)}`,
+
+    secondTitle: secondInStoreOption.title,
+    secondGroceries: `$${secondInStoreOption.groceries.toFixed(2)}`,
+    secondExtraLabel: 'Travel',
+    secondExtra: `$${secondInStoreOption.travel.toFixed(2)}`,
+    secondTotal: `$${secondInStoreOption.total.toFixed(2)}`,
+    secondSavings: `$${(
+      thirdInStoreOption.total - secondInStoreOption.total
+    ).toFixed(2)}`,
+
+    thirdTitle: thirdInStoreOption.title,
+    thirdGroceries: `$${thirdInStoreOption.groceries.toFixed(2)}`,
+    thirdExtraLabel: 'Travel',
+    thirdExtra: `$${thirdInStoreOption.travel.toFixed(2)}`,
+    thirdTotal: `$${thirdInStoreOption.total.toFixed(2)}`,
+
+    bestTags: inStoreRecommendation.tags,
+
+    bestStoreItems: inStoreRecommendation.storeItems,
+
+    secondTags:
+      secondInStoreOption.type === 'multi-store'
+        ? [
+            `PAK'nSAVE · ${Math.max(items.length - 1, 0)} items`,
+            'Woolworths · 1 item',
+          ]
+        : [
+            `${secondInStoreOption.title.replace(' only', '')} · ${items.length} items`,
+          ],
+    thirdTags:
+      thirdInStoreOption.type === 'multi-store'
+        ? [
+            `PAK'nSAVE · ${Math.max(items.length - 1, 0)} items`,
+            'Woolworths · 1 item',
+          ]
+        : [
+            `${thirdInStoreOption.title.replace(' only', '')} · ${items.length} items`,
+          ],
     },
 
     'click-collect': {
@@ -165,6 +316,33 @@ function StoreRecommendations({
       </header>
 
       <div className="options-content">
+        <div className="scenario-selector">
+          <strong>Test Scenario:</strong>
+
+          <button
+            type="button"
+            onClick={() => setTestScenario('single-store')}
+            disabled={testScenario === 'single-store'}
+          >
+            Single Store Cheapest
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTestScenario('multi-store')}
+            disabled={testScenario === 'multi-store'}
+          >
+            Multi-Store Cheapest
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTestScenario('travel-override')}
+            disabled={testScenario === 'travel-override'}
+          >
+            Travel Cost Override
+          </button>
+        </div>
         <div className="option-tabs">
           <button
             type="button"
