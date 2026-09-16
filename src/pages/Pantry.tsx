@@ -35,6 +35,7 @@ function Pantry({
   const [error, setError] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
   const [newItemName, setNewItemName] = useState('')
+  const [newItemUnit, setNewItemUnit] = useState('')
   const [newItemQuantity, setNewItemQuantity] = useState(1)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editingQuantity, setEditingQuantity] = useState(1)
@@ -46,7 +47,7 @@ function Pantry({
   const TEMP_USER_ID = '00000000-0000-0000-0000-000000000001'
 
   const loadPantry = async () => {
-    try {
+      try {
       setLoading(true)
       setError('')
 
