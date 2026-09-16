@@ -159,10 +159,24 @@ function Pantry({
     }
 }
 
-const handleRemovePantryItem = (id: string) => {
-  setPantryItems((currentItems) =>
-    currentItems.filter((item) => item.id !== id)
-  )
+const handleRemovePantryItem = async (id: string) => {
+  try {
+    setError('')
+
+    const response = await fetch(
+      `http://localhost:8087/pantry-items/${id}`,
+      {
+        method: 'DELETE',
+      }
+    )
+    if (!response.ok) {
+      throw new Error('Could not remove pantry item')
+    }
+    await loadPantry()
+  } catch (err) {
+    console.error(err)
+    setError('Unable to remove pantry item.')
+  }
 }
 
 const handleStartEdit = (item: PantryDisplayItem) => {
@@ -170,22 +184,35 @@ const handleStartEdit = (item: PantryDisplayItem) => {
   setEditingQuantity(item.quantity)
 }
 
-const handleSaveEdit = (id: string) => {
+const handleSaveEdit = async (id: string) => {
   if (editingQuantity < 1) {
     return
   }
-  setPantryItems((currentItems) =>
-    currentItems.map((item) =>
-      item.id === id
-        ? {
-            ...item,
-            quantity: editingQuantity,
-            lowStock: editingQuantity <= 1,
-          }
-        : item
+
+  try {
+    setError('')
+
+    const params = new URLSearchParams({
+      quantity: String(editingQuantity),
+    })
+
+    const response = await fetch(
+      `http://localhost:8087/pantry-items/${id}?${params.toString()}`,
+      {
+        method: 'PUT',
+      }
     )
-  )
-  setEditingItemId(null)
+
+    if (!response.ok) {
+      throw new Error('Could not update pantry item')
+    }
+
+    setEditingItemId(null)
+    await loadPantry()
+  } catch (err) {
+    console.error(err)
+    setError('Unable to update pantry item.')
+  }
 }
 
   return (
