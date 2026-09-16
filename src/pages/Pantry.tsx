@@ -38,7 +38,10 @@ function Pantry({
   const [newItemQuantity, setNewItemQuantity] = useState(1)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editingQuantity, setEditingQuantity] = useState(1)
-  const[newItemUnit, setNewItemUnit] = useState('');
+
+  const[productResults, setProductResults] = useState<ProductApiItem[]>([])
+  const[selectedProduct, setSelectedProduct] = useState<ProductApiItem | null>(null)
+
   // Temporary until the authentication service provides the logged-in user's UUID.
   const TEMP_USER_ID = '00000000-0000-0000-0000-000000000001'
 
@@ -88,11 +91,36 @@ function Pantry({
     loadPantry()
   }, [])
 
-  const handleAddPantryItem = async () => {
-    const trimmedName = newItemName.trim()
-    const trimmedUnit = newItemUnit.trim()
+  const handleProductSearch = async (value: string) => {
+    setNewItemName(value)
+    setSelectedProduct(null)
 
-    if (!trimmedName || !trimmedUnit || newItemQuantity < 1) {
+    if (value.trim().length < 2) {
+      setProductResults([])
+      return
+    }
+
+    try {
+      const response = await fetch(
+          `http://localhost:8082/products/search?query=${encodeURIComponent(value)}`
+      )
+
+      if (!response.ok) {
+        throw new Error('Could not search products')
+      }
+
+      const products: ProductApiItem[] = await response.json()
+
+      setProductResults(products)
+    } catch (err) {
+      console.error(err)
+      setProductResults([])
+    }
+  }
+
+  const handleAddPantryItem = async () => {
+
+    if (!selectedProduct || newItemQuantity < 1) {
       return
   }
 
@@ -101,8 +129,7 @@ function Pantry({
 
       const params = new URLSearchParams({
         userId: TEMP_USER_ID, // TODO: replace with real userid
-        productName: trimmedName,
-        unit: trimmedUnit,
+        productId: selectedProduct.productId,
         quantity: String(newItemQuantity),
       })
 
@@ -121,7 +148,8 @@ function Pantry({
       await loadPantry()
 
       setNewItemName('')
-      setNewItemUnit('')
+      setSelectedProduct(null)
+      setProductResults([])
       setNewItemQuantity(1)
       setShowAddForm(false)
     } catch (err) {
@@ -178,18 +206,34 @@ const handleSaveEdit = (id: string) => {
         {showAddForm && (
           <div className="add-pantry-form">
             <input
-              type="text"
-              placeholder="Item name"
-              value={newItemName}
-              onChange={(event) => setNewItemName(event.target.value)}
-            />
-            <input
                 type="text"
-                placeholder="Unit"
-                value={newItemUnit}
-                onChange={(event) => setNewItemUnit(event.target.value)}
+                placeholder={"Search products..."}
+                value={newItemName}
+                onChange={(event) => handleProductSearch(event.target.value)
+            }
             />
 
+            {productResults.length > 0 && !selectedProduct && (
+                <div className="product-dropdown">
+                  {productResults.map((product) =>
+                  <button
+                      type="button"
+                      key={product.productId}
+                      className="product-dropdown-item"
+                      onClick={() => {
+                        setSelectedProduct(product)
+                        setNewItemName(`${product.name} - ${product.unit}`
+                        )
+                        setProductResults([])
+                      }}
+                  >
+                    <span>{product.name}</span>
+                    <span>{product.unit}</span>
+                    {product.name} - {product.unit}
+                  </button>
+                  )}
+                </div>
+            )}
             <input
               type="number"
               min="1"
