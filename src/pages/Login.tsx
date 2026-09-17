@@ -2,8 +2,9 @@ import './Login.css'
 
 interface LoginProps {
   onLogin: () => void
+  onCreateAccount: () => void
 }
-function Login({ onLogin }: LoginProps) {
+function Login({ onLogin, onCreateAccount }: LoginProps) {
     return (
     <main className="login-page">
       <section className="login-card">
@@ -31,7 +32,16 @@ function Login({ onLogin }: LoginProps) {
         </form>
 
         <p className="create-account">
-          Don't have an account? <a href="#">Create Account</a>
+          Don't have an account?{' '}
+          <a
+            href="#"
+            onClick={(event) => {
+              event.preventDefault()
+              onCreateAccount()
+            }}
+          >
+            Create Account
+          </a>
         </p>
       </section>
     </main>
