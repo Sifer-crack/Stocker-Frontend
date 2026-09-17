@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Login from './pages/Login'
+import SignUp from './pages/SignUp'
 import Dashboard from './pages/Dashboard'
 import ShoppingList from './pages/ShoppingList'
 import StoreRecommendations from './pages/StoreRecommendations'
@@ -15,6 +16,7 @@ function App() {
   const [showLanding, setShowLanding] = useState(true)
   const [selectedOption, setSelectedOption] = useState('')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [showSignUp, setShowSignUp] = useState(false)
   const [items, setItems] = useState<string[]>([])
   const [weeklyBudget, setWeeklyBudget] = useState(150)
   const [currentPage, setCurrentPage] = useState<
@@ -43,7 +45,20 @@ const estimatedCost = items.reduce((total, item) => {
   }
 
   if (!isLoggedIn) {
-    return <Login onLogin={() => setIsLoggedIn(true)} />
+    if (showSignUp) {
+      return (
+        <SignUp
+          onBackToLogin={() => setShowSignUp(false)}
+        />
+      )
+    }
+
+    return (
+      <Login
+        onLogin={() => setIsLoggedIn(true)}
+        onCreateAccount={() => setShowSignUp(true)}
+      />
+    )
   }
 
   let pageContent
