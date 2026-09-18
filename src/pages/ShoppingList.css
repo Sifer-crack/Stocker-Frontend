@@ -1,0 +1,258 @@
+.shopping-page {
+  min-height: 100vh;
+  background: #f7f8f5;
+  color: #173022;
+}
+
+.shopping-header {
+  padding: 28px 44px;
+  background: #ffffff;
+  border-bottom: 1px solid #dfe5dc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.shopping-header h1 {
+  margin: 0 0 6px;
+  font-size: 34px;
+  color: #173022;
+}
+
+.shopping-header p {
+  margin: 0;
+  color: #718075;
+  font-size: 17px;
+}
+
+.shopping-header-actions {
+  display: flex;
+  gap: 14px;
+}
+
+.shopping-header-actions input {
+  width: 280px;
+  padding: 14px 16px;
+  border: 1px solid #d7dfd4;
+  border-radius: 14px;
+  background: #fbfcfa;
+  color: #173022;
+  font-size: 16px;
+}
+
+.shopping-header-actions button {
+  padding: 14px 22px;
+  border: none;
+  border-radius: 14px;
+  background: #198754;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shopping-content {
+  padding: 36px 44px;
+  display: grid;
+  grid-template-columns: minmax(500px, 1.15fr) minmax(380px, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.shopping-list-card,
+.shopping-progress-card {
+  background: #ffffff;
+  border: 1px solid #dfe5dc;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.shopping-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.shopping-item {
+  padding: 22px 28px;
+  border-bottom: 1px solid #e8ece6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.shopping-item:last-child {
+  border-bottom: none;
+}
+
+.shopping-item-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.shopping-item-info strong {
+  display: block;
+  font-size: 18px;
+  color: #173022;
+  margin-bottom: 4px;
+}
+
+.shopping-item-info p {
+  margin: 0;
+  color: #879488;
+  font-size: 15px;
+}
+
+.shopping-item-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.shopping-item-actions span {
+  font-weight: 700;
+  color: #173022;
+}
+
+.shopping-item-actions button {
+  padding: 8px 12px;
+  border: 1px solid #d4ddd1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #198754;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.empty-list {
+  padding: 40px;
+  text-align: center;
+  color: #879488;
+}
+
+.shopping-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.shopping-progress-card {
+  padding: 28px;
+}
+
+.shopping-progress-card h2 {
+  margin: 0 0 18px;
+  font-size: 23px;
+}
+
+.progress-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: #e0e6dd;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.progress-fill {
+  width: 0%;
+  height: 100%;
+  background: #198754;
+}
+
+.shopping-progress-card > strong {
+  color: #198754;
+  font-size: 16px;
+}
+
+.shopping-progress-card hr {
+  border: none;
+  border-top: 1px solid #dfe5dc;
+  margin: 22px 0;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 16px;
+  color: #718075;
+}
+
+.summary-row strong {
+  color: #173022;
+}
+
+.compare-stores-button {
+  width: 100%;
+  padding: 18px;
+  border: none;
+  border-radius: 16px;
+  background: #198754;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.compare-stores-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.compare-help {
+  margin: 0;
+  text-align: center;
+  color: #8b988d;
+  font-size: 15px;
+}
+
+@media (max-width: 1100px) {
+  .shopping-content {
+    grid-template-columns: 1fr;
+  }
+
+  .shopping-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .shopping-header-actions {
+    width: 100%;
+  }
+
+  .shopping-header-actions input {
+    flex: 1;
+    width: auto;
+  }
+}
+
+.item-checkbox {
+  width: 34px;
+  height: 34px;
+  border: 2px solid #d0daca;
+  border-radius: 9px;
+  background: #ffffff;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.item-checkbox.completed {
+  background: #198754;
+  border-color: #198754;
+}
+
+.item-checkbox.completed::after {
+  content: '✓';
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+}
