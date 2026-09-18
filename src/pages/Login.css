@@ -56,3 +56,10 @@
   margin-top: 20px;
   text-align: center;
 }
+
+.login-error {
+  margin: 0;
+  color: #b3261e;
+  font-size: 14px;
+  text-align: center;
+}

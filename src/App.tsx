@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import type { ReactNode } from 'react'
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import Login from './pages/Login'
 import SignUp from './pages/SignUp'
@@ -7,19 +6,14 @@ import Dashboard from './pages/Dashboard'
 import ShoppingList from './pages/ShoppingList'
 import StoreRecommendations from './pages/StoreRecommendations'
 import Sidebar from './components/Sidebar'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import { useAuth } from './context/AuthContext'
 import './App.css'
 import ShoppingRoute from './pages/ShoppingRoute'
 import GroceryBudget from './pages/GroceryBudget'
 import Pantry from './pages/Pantry'
 import Account from './pages/Account'
 import { LandingPage } from './landing-page'
-
-function RequireAuth({ isLoggedIn, children }: { isLoggedIn: boolean; children: ReactNode }) {
-  if (!isLoggedIn) {
-    return <Navigate to="/login" replace />
-  }
-  return children
-}
 
 function AppLayout({ weeklyBudget, estimatedCost }: { weeklyBudget: number; estimatedCost: number }) {
   return (
@@ -33,7 +27,7 @@ function AppLayout({ weeklyBudget, estimatedCost }: { weeklyBudget: number; esti
 }
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const { accessToken, loading } = useAuth()
   const [items, setItems] = useState<string[]>([])
   const [weeklyBudget, setWeeklyBudget] = useState(150)
   const [selectedOption, setSelectedOption] = useState('')
@@ -68,18 +62,18 @@ function App() {
     setSelectedOption(option)
   }
 
+  if (loading) {
+    return <div>Loading...</div>
+  }
+
+  const isLoggedIn = accessToken !== null
+
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route
         path="/login"
-        element={
-          isLoggedIn ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
-            <Login onLogin={() => setIsLoggedIn(true)} />
-          )
-        }
+        element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />}
       />
       <Route
         path="/signup"
@@ -88,9 +82,9 @@ function App() {
 
       <Route
         element={
-          <RequireAuth isLoggedIn={isLoggedIn}>
+          <ProtectedRoute>
             <AppLayout weeklyBudget={weeklyBudget} estimatedCost={estimatedCost} />
-          </RequireAuth>
+          </ProtectedRoute>
         }
       >
         <Route
