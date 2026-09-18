@@ -1,11 +1,8 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import './Login.css'
 
-interface SignUpProps {
-  onBackToLogin: () => void
-}
-
-function SignUp({ onBackToLogin }: SignUpProps) {
+function SignUp() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -80,15 +77,9 @@ function SignUp({ onBackToLogin }: SignUpProps) {
 
         <p className="create-account">
           Already have an account?{' '}
-          <a
-            href="#"
-            onClick={(event) => {
-              event.preventDefault()
-              onBackToLogin()
-            }}
-          >
+          <Link to="/login">
             Log In
-          </a>
+          </Link>
         </p>
       </section>
     </main>

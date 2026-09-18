@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './Pantry.css'
 
 interface PantryProps {
@@ -30,6 +31,11 @@ interface PantryDisplayItem {
 function Pantry({
   onAddToShoppingList,
 }: PantryProps) {
+  const navigate = useNavigate()
+  const handleAddToShoppingList = (item: string) => {
+    onAddToShoppingList(item)
+    navigate('/shopping-list')
+  }
   const [pantryItems, setPantryItems] = useState<PantryDisplayItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -258,7 +264,7 @@ const handleSaveEdit = (id: string) => {
                 <button
                   type="button"
                   onClick={() =>
-                    onAddToShoppingList(item.name)
+                    handleAddToShoppingList(item.name)
                   }
                 >
                   Add to Shopping List

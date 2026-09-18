@@ -1,15 +1,15 @@
 import './ShoppingRoute.css'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 interface ShoppingRouteProps {
   selectedOption: string
-  onBack: () => void
 }
 
 function ShoppingRoute({
   selectedOption,
-  onBack,
 }: ShoppingRouteProps) {
+  const navigate = useNavigate()
   const [shoppingStarted, setShoppingStarted] = useState(false)
   const stores = selectedOption
     .replace(' only', '')
@@ -98,7 +98,7 @@ function ShoppingRoute({
           <button
             type="button"
             className="route-back-button"
-            onClick={onBack}
+            onClick={() => navigate('/store-recommendations')}
           >
             Back to Shopping Options
           </button>

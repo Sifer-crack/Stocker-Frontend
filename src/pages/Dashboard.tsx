@@ -1,20 +1,20 @@
+import { useNavigate } from 'react-router-dom'
 import './Dashboard.css'
 
 interface DashboardProps {
   items: string[]
   weeklyBudget: number
   estimatedCost: number
-  onCreateShoppingList: () => void
-  onViewPantry: () => void
 }
 
 function Dashboard({
   items,
   weeklyBudget,
   estimatedCost,
-  onCreateShoppingList,
-  onViewPantry,
 }: DashboardProps) {
+  const navigate = useNavigate()
+  const handleCreateShoppingList = () => navigate('/shopping-list')
+  const handleViewPantry = () => navigate('/pantry')
   const remainingBudget = weeklyBudget - estimatedCost
   const budgetUsedPercentage =
   weeklyBudget > 0
@@ -34,7 +34,7 @@ function Dashboard({
             placeholder="Search products"
           />
 
-          <button type="button" onClick={onCreateShoppingList}>
+          <button type="button" onClick={handleCreateShoppingList}>
             Compare Stores
           </button>
         </div>
@@ -75,7 +75,7 @@ function Dashboard({
             <button
               type="button"
               className="primary-button"
-              onClick={onViewPantry}
+              onClick={handleViewPantry}
             >
               View Pantry
             </button>
@@ -83,7 +83,7 @@ function Dashboard({
             <button
               type="button"
               className="secondary-button"
-              onClick={onViewPantry}
+              onClick={handleViewPantry}
             >
               + Add
             </button>
@@ -108,7 +108,7 @@ function Dashboard({
           <button
             type="button"
             className="primary-button full-width"
-            onClick={onCreateShoppingList}
+            onClick={handleCreateShoppingList}
           >
             {items.length === 0
               ? 'Create Shopping List'
@@ -125,7 +125,7 @@ function Dashboard({
             </p>
           </div>
 
-          <button type="button" onClick={onCreateShoppingList}>
+          <button type="button" onClick={handleCreateShoppingList}>
             Compare Stores
           </button>
         </section>

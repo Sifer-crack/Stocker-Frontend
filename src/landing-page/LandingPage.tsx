@@ -1,4 +1,5 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import './LandingPage.css'
 
 interface Feature {
@@ -116,11 +117,9 @@ const OFFERINGS: Offering[] = [
   },
 ]
 
-interface LandingPageProps {
-  onGetStarted: () => void
-}
-
-export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
+export const LandingPage: React.FC = () => {
+  const navigate = useNavigate()
+  const handleGetStarted = () => navigate('/login')
   return (
     <div className="landing-page">
       {/* Navigation Bar */}
@@ -148,7 +147,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           <button
             type="button"
             className="cta-btn primary-btn sm"
-            onClick={onGetStarted}
+            onClick={handleGetStarted}
           >
             Get Started
           </button>
@@ -310,7 +309,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           <button
             type="button"
             className="cta-btn primary-btn"
-            onClick={onGetStarted}
+            onClick={handleGetStarted}
           >
             Get Started Now
           </button>

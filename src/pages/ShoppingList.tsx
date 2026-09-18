@@ -1,8 +1,8 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './ShoppingList.css'
 
 interface ShoppingListProps {
-  onCompareStores: () => void
   items: string[]
   setItems: React.Dispatch<React.SetStateAction<string[]>>
   weeklyBudget: number
@@ -12,8 +12,8 @@ function ShoppingList({
   items,
   setItems,
   weeklyBudget,
-  onCompareStores,
 }: ShoppingListProps) {
+  const navigate = useNavigate()
   const [itemName, setItemName] = useState('')
   const [completedItems, setCompletedItems] = useState<number[]>([])
   const toggleCompleted = (index: number) => {
@@ -172,7 +172,7 @@ const removeItem = (index: number) => {
           <button
             type="button"
             className="compare-stores-button"
-            onClick={onCompareStores}
+            onClick={() => navigate('/store-recommendations')}
             disabled={items.length === 0}
           >
             Compare Stores

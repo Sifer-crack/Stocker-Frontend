@@ -1,10 +1,11 @@
+import { Link, useNavigate } from 'react-router-dom'
 import './Login.css'
 
 interface LoginProps {
   onLogin: () => void
-  onCreateAccount: () => void
 }
-function Login({ onLogin, onCreateAccount }: LoginProps) {
+function Login({ onLogin }: LoginProps) {
+  const navigate = useNavigate()
     return (
     <main className="login-page">
       <section className="login-card">
@@ -16,7 +17,8 @@ function Login({ onLogin, onCreateAccount }: LoginProps) {
           onSubmit={(event) => {
             event.preventDefault()
             onLogin()
-            }} 
+            navigate('/dashboard', { replace: true })
+            }}
         >
            <label>
             Email
@@ -33,15 +35,9 @@ function Login({ onLogin, onCreateAccount }: LoginProps) {
 
         <p className="create-account">
           Don't have an account?{' '}
-          <a
-            href="#"
-            onClick={(event) => {
-              event.preventDefault()
-              onCreateAccount()
-            }}
-          >
+          <Link to="/signup">
             Create Account
-          </a>
+          </Link>
         </p>
       </section>
     </main>
