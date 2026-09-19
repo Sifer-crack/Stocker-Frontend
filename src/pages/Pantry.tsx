@@ -14,9 +14,10 @@ interface PantryApiItem {
 
 interface ProductApiItem {
   productId: string
-  categoryId: string | null
-  name: string
-  unit: string
+  productName: string
+  groceryType: string | null
+  sellingWeightKg: number | null
+  sellingVolumeL: number | null
 }
 
 interface PantryDisplayItem {
@@ -27,6 +28,17 @@ interface PantryDisplayItem {
   lowStock: boolean
 }
 
+const getProductSize = (product: ProductApiItem): string => {
+  if (product.sellingWeightKg != null) {
+    return `${product.sellingWeightKg} kg`
+  }
+
+  if (product.sellingVolumeL != null) {
+    return `${product.sellingVolumeL} L`
+  }
+  return ''
+}
+
 function Pantry({
   onAddToShoppingList,
 }: PantryProps) {
@@ -35,7 +47,6 @@ function Pantry({
   const [error, setError] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
   const [newItemName, setNewItemName] = useState('')
-  const [newItemUnit, setNewItemUnit] = useState('')
   const [newItemQuantity, setNewItemQuantity] = useState(1)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editingQuantity, setEditingQuantity] = useState(1)
@@ -73,9 +84,9 @@ function Pantry({
 
           return {
             id: pantryItem.pantry_item_id,
-            name: product.name,
+            name: product.productName,
             quantity: pantryItem.quantity,
-            unit: product.unit,
+            unit: getProductSize(product),
             lowStock: pantryItem.quantity <= 1,
           }
         })
@@ -250,14 +261,13 @@ const handleSaveEdit = async (id: string) => {
                       className="product-dropdown-item"
                       onClick={() => {
                         setSelectedProduct(product)
-                        setNewItemName(`${product.name} - ${product.unit}`
+                        setNewItemName(`${product.productName} - ${getProductSize(product)}`
                         )
                         setProductResults([])
                       }}
                   >
-                    <span>{product.name}</span>
-                    <span>{product.unit}</span>
-                    {product.name} - {product.unit}
+                    <span>{product.productName}</span>
+                    <span>{getProductSize(product)}</span>
                   </button>
                   )}
                 </div>
