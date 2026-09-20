@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { fetchNutritionForFood } from '../lib/nutrition'
+import type { NutritionResult } from '../lib/nutrition'
 import './Pantry.css'
 
 interface PantryProps {
@@ -59,6 +61,11 @@ function Pantry({
 
   const[productResults, setProductResults] = useState<ProductApiItem[]>([])
   const[selectedProduct, setSelectedProduct] = useState<ProductApiItem | null>(null)
+  const [nutritionById, setNutritionById] = useState<Record<string, NutritionResult>>({})
+  const [nutritionLoadingId, setNutritionLoadingId] = useState<string | null>(null)
+  const [nutritionErrorById, setNutritionErrorById] = useState<Record<string, string>>({})
+  const [expandedNutritionId, setExpandedNutritionId] = useState<string | null>(null)
+  const nutritionAbortRef = useRef<AbortController | null>(null)
 
   // Temporary until the authentication service provides the logged-in user's UUID.
   const TEMP_USER_ID = '00000000-0000-0000-0000-000000000001'
@@ -199,6 +206,41 @@ const handleRemovePantryItem = async (id: string) => {
 const handleStartEdit = (item: PantryDisplayItem) => {
   setEditingItemId(item.id)
   setEditingQuantity(item.quantity)
+}
+
+const handleShowNutrition = async (item: PantryDisplayItem) => {
+  if (expandedNutritionId === item.id) {
+    setExpandedNutritionId(null)
+    return
+  }
+  setExpandedNutritionId(item.id)
+  if (nutritionById[item.id]) {
+    return
+  }
+  nutritionAbortRef.current?.abort()
+  const controller = new AbortController()
+  nutritionAbortRef.current = controller
+  setNutritionLoadingId(item.id)
+  setNutritionErrorById((current) => {
+    const next = { ...current }
+    delete next[item.id]
+    return next
+  })
+  try {
+    const result = await fetchNutritionForFood(item.name, controller.signal)
+    setNutritionById((current) => ({ ...current, [item.id]: result }))
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      return
+    }
+    console.error(err)
+    setNutritionErrorById((current) => ({
+      ...current,
+      [item.id]: err instanceof Error ? err.message : `No nutrition data found for "${item.name}".`,
+    }))
+  } finally {
+    setNutritionLoadingId((current) => (current === item.id ? null : current))
+  }
 }
 
 const handleSaveEdit = async (id: string) => {
@@ -349,6 +391,12 @@ const handleSaveEdit = async (id: string) => {
                 >
                   Add to Shopping List
                 </button>
+                <button
+                  type="button"
+                  onClick={() => handleShowNutrition(item)}
+                >
+                  {expandedNutritionId === item.id ? 'Hide Nutrition' : 'Nutrition'}
+                </button>
                 {editingItemId === item.id ? (
                   <button
                     type="button"
@@ -372,6 +420,45 @@ const handleSaveEdit = async (id: string) => {
                   Remove
                 </button>
               </div>
+              {expandedNutritionId === item.id && (
+                <div className="nutrition-panel">
+                  {nutritionLoadingId === item.id && <p>Loading nutrition…</p>}
+                  {nutritionErrorById[item.id] && nutritionLoadingId !== item.id && (
+                    <p className="nutrition-error">{nutritionErrorById[item.id]}</p>
+                  )}
+                  {nutritionById[item.id] && nutritionLoadingId !== item.id && (
+                    <>
+                      <p className="nutrition-match">
+                        {nutritionById[item.id].food.foodname} — serving:{' '}
+                        {nutritionById[item.id].servingAmount}{' '}
+                        {nutritionById[item.id].food.serving_size_unit} (
+                        {nutritionById[item.id].food.serving_or_measure_description})
+                      </p>
+                      <table className="nutrition-table">
+                        <thead>
+                          <tr>
+                            <th>Nutrient</th>
+                            <th>Per serving</th>
+                            <th>%RDI</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {nutritionById[item.id].components.map((component) => (
+                            <tr key={component.component_code}>
+                              <td>
+                                {component.component_displayname}
+                                <span className="nutrition-per100"> ({component.unit_abbr})</span>
+                              </td>
+                              <td>{component.amount}</td>
+                              <td>{component.percent_RDI}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </section>
