@@ -1,18 +1,61 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useUser } from '../context/UserContext'
 import './Dashboard.css'
 
 interface DashboardProps {
   items: string[]
-  weeklyBudget: number
   estimatedCost: number
+}
+
+interface PantryApiItem {
+  pantry_item_id: string
+  user_id: string
+  product_id: string
+  quantity: number
 }
 
 function Dashboard({
   items,
-  weeklyBudget,
   estimatedCost,
 }: DashboardProps) {
   const navigate = useNavigate()
+  const { user } = useUser()
+  const weeklyBudget = user?.groceryBudget ?? 0
+  const [pantryCount, setPantryCount] = useState(0)
+  const [lowStockCount, setLowStockCount] = useState(0)
+
+  useEffect(() => {
+    if (!user) {
+      setPantryCount(0)
+      setLowStockCount(0)
+      return
+    }
+
+    const loadPantrySummary = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:8087/pantry-items?userId=${user.id}`
+        )
+
+        if (!response.ok) {
+          throw new Error('Could not load pantry')
+        }
+
+        const pantryItems: PantryApiItem[] = await response.json()
+
+        setPantryCount(pantryItems.length)
+        setLowStockCount(
+          pantryItems.filter((item) => item.quantity <= 1).length
+        )
+      } catch (error) {
+        console.error('Unable to load pantry summary:', error)
+      }
+    }
+
+    loadPantrySummary()
+  }, [user])
+
   const handleCreateShoppingList = () => navigate('/shopping-list')
   const handleViewPantry = () => navigate('/pantry')
   const remainingBudget = weeklyBudget - estimatedCost
@@ -66,9 +109,14 @@ function Dashboard({
           <div className="dashboard-card-heading">
             <div>
               <h2>My Pantry</h2>
-              <p>6 pantry items tracked, 3 items running low.</p>
+              <p>
+                {pantryCount} pantry {pantryCount === 1 ? 'item' : 'items'} tracked,{' '}
+                {lowStockCount} {lowStockCount === 1 ? 'item' : 'items'} running low.
+              </p>
             </div>
-            <strong>6 items</strong>
+            <strong>
+              {pantryCount} {pantryCount === 1 ? 'item' : 'items'}
+            </strong>
           </div>
 
           <div className="dashboard-card-actions">

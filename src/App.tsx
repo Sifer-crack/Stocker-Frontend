@@ -10,15 +10,14 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { useAuth } from './context/AuthContext'
 import './App.css'
 import ShoppingRoute from './pages/ShoppingRoute'
-import GroceryBudget from './pages/GroceryBudget'
 import Pantry from './pages/Pantry'
 import Account from './pages/Account'
 import { LandingPage } from './landing-page'
 
-function AppLayout({ weeklyBudget, estimatedCost }: { weeklyBudget: number; estimatedCost: number }) {
+function AppLayout({ estimatedCost }: { estimatedCost: number }) {
   return (
     <div className="app-layout">
-      <Sidebar weeklyBudget={weeklyBudget} estimatedCost={estimatedCost} />
+      <Sidebar estimatedCost={estimatedCost} />
       <div className="app-content">
         <Outlet />
       </div>
@@ -29,7 +28,6 @@ function AppLayout({ weeklyBudget, estimatedCost }: { weeklyBudget: number; esti
 function App() {
   const { accessToken, loading } = useAuth()
   const [items, setItems] = useState<string[]>([])
-  const [weeklyBudget, setWeeklyBudget] = useState(150)
   const [selectedOption, setSelectedOption] = useState('')
 
   const itemPrices: Record<string, number> = {
@@ -83,7 +81,7 @@ function App() {
       <Route
         element={
           <ProtectedRoute>
-            <AppLayout weeklyBudget={weeklyBudget} estimatedCost={estimatedCost} />
+            <AppLayout estimatedCost={estimatedCost} />
           </ProtectedRoute>
         }
       >
@@ -92,7 +90,6 @@ function App() {
           element={
             <Dashboard
               items={items}
-              weeklyBudget={weeklyBudget}
               estimatedCost={estimatedCost}
             />
           }
@@ -107,7 +104,6 @@ function App() {
             <ShoppingList
               items={items}
               setItems={setItems}
-              weeklyBudget={weeklyBudget}
             />
           }
         />
@@ -125,15 +121,6 @@ function App() {
             ) : (
               <ShoppingRoute selectedOption={selectedOption} />
             )
-          }
-        />
-        <Route
-          path="/grocery-budget"
-          element={
-            <GroceryBudget
-              weeklyBudget={weeklyBudget}
-              setWeeklyBudget={setWeeklyBudget}
-            />
           }
         />
         <Route path="/account" element={<Account />} />

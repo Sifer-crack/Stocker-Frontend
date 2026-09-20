@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { fetchNutritionForFood } from '../lib/nutrition'
 import type { NutritionResult } from '../lib/nutrition'
 import './Pantry.css'
+import { useUser } from '../context/UserContext'
 
 interface PantryProps {
   onAddToShoppingList: (item: string) => void
@@ -46,6 +47,7 @@ function Pantry({
   onAddToShoppingList,
 }: PantryProps) {
   const navigate = useNavigate()
+  const { user } = useUser()
   const handleAddToShoppingList = (item: string) => {
     onAddToShoppingList(item)
     navigate('/shopping-list')
@@ -67,16 +69,19 @@ function Pantry({
   const [expandedNutritionId, setExpandedNutritionId] = useState<string | null>(null)
   const nutritionAbortRef = useRef<AbortController | null>(null)
 
-  // Temporary until the authentication service provides the logged-in user's UUID.
-  const TEMP_USER_ID = '00000000-0000-0000-0000-000000000001'
-
   const loadPantry = async () => {
       try {
       setLoading(true)
       setError('')
 
+      if (!user) {
+        setPantryItems([])
+        setLoading(false)
+        return
+      }
+
       const pantryResponse = await fetch(
-        `http://localhost:8087/pantry-items?userId=${TEMP_USER_ID}`
+        `http://localhost:8087/pantry-items?userId=${user.id}`
       )
       if (!pantryResponse.ok) {
         throw new Error('Could not load pantry')
@@ -113,8 +118,10 @@ function Pantry({
     }
   }
   useEffect(() => {
-    loadPantry()
-  }, [])
+    if (user) {
+      loadPantry()
+    }
+  }, [user])
 
   const handleProductSearch = async (value: string) => {
     setNewItemName(value)
@@ -145,7 +152,7 @@ function Pantry({
 
   const handleAddPantryItem = async () => {
 
-    if (!selectedProduct || newItemQuantity < 1) {
+    if (!user || !selectedProduct || newItemQuantity < 1) {
       return
   }
 
@@ -153,7 +160,7 @@ function Pantry({
       setError('')
 
       const params = new URLSearchParams({
-        userId: TEMP_USER_ID, // TODO: replace with real userid
+        userId: user.id,
         productId: selectedProduct.productId,
         quantity: String(newItemQuantity),
       })

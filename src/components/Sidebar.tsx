@@ -1,12 +1,15 @@
 import { NavLink } from 'react-router-dom'
 import './Sidebar.css'
+import { useUser } from '../context/UserContext'
 
 interface SidebarProps {
-  weeklyBudget: number
   estimatedCost: number
 }
 
-function Sidebar({ weeklyBudget, estimatedCost }: SidebarProps) {
+function Sidebar({ estimatedCost }: SidebarProps) {
+  const { user } = useUser()
+
+  const weeklyBudget = user?.groceryBudget ?? 0
   const remainingBudget = weeklyBudget - estimatedCost
   const budgetUsedPercentage =
     weeklyBudget > 0
@@ -18,7 +21,6 @@ function Sidebar({ weeklyBudget, estimatedCost }: SidebarProps) {
     { label: 'Shopping List', path: '/shopping-list' },
     { label: 'Shopping Options', path: '/store-recommendations' },
     { label: 'Shopping Route', path: '/shopping-route' },
-    { label: 'Grocery Budget', path: '/grocery-budget' },
     { label: 'Account', path: '/account' },
   ]
 
@@ -60,11 +62,18 @@ function Sidebar({ weeklyBudget, estimatedCost }: SidebarProps) {
         </section>
 
         <section className="user-card">
-          <div className="user-avatar">EM</div>
+          <div className="user-avatar">
+            {user?.firstName?.charAt(0) ?? 'U'}
+            {user?.lastName?.charAt(0) ?? ''}
+          </div>
 
           <div>
-            <strong>Emma Reid</strong>
-            <p>emma.reid@email.com</p>
+            <strong>
+              {[user?.firstName, user?.lastName]
+                .filter(Boolean)
+                .join(' ') || 'Stocker User'}
+            </strong>
+            <p>{user?.email ?? ''}</p>
           </div>
         </section>
       </div>
