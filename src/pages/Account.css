@@ -94,6 +94,65 @@
   text-align: right;
 }
 
+.account-budget {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.account-budget > div:last-of-type {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.account-budget label {
+  color: #65756b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.account-budget input {
+  width: 100%;
+  max-width: 320px;
+  padding: 12px 14px;
+  border: 1px solid #d8dfd6;
+  border-radius: 10px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.account-budget input:focus {
+  outline: none;
+  border-color: #198754;
+}
+
+.account-budget button {
+  width: fit-content;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 10px;
+  background: #198754;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-budget button:hover {
+  background: #157347;
+}
+
+.account-budget .budget-error {
+  color: #b42318;
+  font-size: 14px;
+}
+
+.account-budget .budget-message {
+  color: #198754;
+  font-size: 14px;
+}
+
 @media (max-width: 800px) {
   .account-header,
   .account-content {
