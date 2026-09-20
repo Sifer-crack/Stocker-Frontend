@@ -1,19 +1,20 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useUser } from '../context/UserContext'
 import './ShoppingList.css'
 
 interface ShoppingListProps {
   items: string[]
   setItems: React.Dispatch<React.SetStateAction<string[]>>
-  weeklyBudget: number
 }
 
 function ShoppingList({
   items,
   setItems,
-  weeklyBudget,
 }: ShoppingListProps) {
   const navigate = useNavigate()
+  const { user } = useUser()
+  const weeklyBudget = user?.groceryBudget ?? 0
   const [itemName, setItemName] = useState('')
   const [completedItems, setCompletedItems] = useState<number[]>([])
   const toggleCompleted = (index: number) => {

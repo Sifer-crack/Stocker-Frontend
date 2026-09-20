@@ -28,7 +28,6 @@ function AppLayout({ estimatedCost }: { estimatedCost: number }) {
 function App() {
   const { accessToken, loading } = useAuth()
   const [items, setItems] = useState<string[]>([])
-  const [weeklyBudget] = useState(150)
   const [selectedOption, setSelectedOption] = useState('')
 
   const itemPrices: Record<string, number> = {
@@ -91,7 +90,6 @@ function App() {
           element={
             <Dashboard
               items={items}
-              weeklyBudget={weeklyBudget}
               estimatedCost={estimatedCost}
             />
           }
@@ -106,7 +104,6 @@ function App() {
             <ShoppingList
               items={items}
               setItems={setItems}
-              weeklyBudget={weeklyBudget}
             />
           }
         />
