@@ -139,6 +139,9 @@ export const LandingPage: React.FC = () => {
           <a href="#offerings" className="nav-link">
             Offerings
           </a>
+          <a href="#/pricing" className="nav-link">
+            Price Compare
+          </a>
         </nav>
         <div className="landing-header-cta">
           <a href="#offerings" className="cta-btn primary-btn sm">

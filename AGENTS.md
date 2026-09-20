@@ -26,4 +26,6 @@ npm run lint && npm run build
 
 ## Modules & Architecture
 - `src/landing-page/`: Marketing landing page module with dedicated sections (Hero, Who We Are, Purpose/Mission, Features, Offerings) and isolated documentation at `src/landing-page/README.md`.
+- `src/pricing/`: Frontend for the Stocker-Backend price engine (`GET /api/pricing/search`, `POST /api/pricing/compare` via the gateway). See `src/pricing/README.md`. Configured via `VITE_GATEWAY_BASE_URL` (`.env.example`), defaults to `http://localhost:8080`.
+- No router dependency yet: `App.tsx` switches between modules on `window.location.hash` (`#/pricing` vs. everything else). Add a real router only if page count grows enough to justify it.
 

@@ -9,6 +9,7 @@ Stocker provides tools for academic data extraction, structured courseware synch
 ### Modules
 
 - **Marketing Landing Page** (`src/landing-page`): Single-page presentation highlighting who we are, what we are here for, and what we have to offer across learner, department, and enterprise tiers. See [landing-page README](src/landing-page/README.md) for details.
+- **Pricing** (`src/pricing`): Frontend for the Stocker-Backend price engine — search live item prices and compare a shopping list's total cost across supermarket chains. See [pricing README](src/pricing/README.md) for details.
 
 ## Development
 
