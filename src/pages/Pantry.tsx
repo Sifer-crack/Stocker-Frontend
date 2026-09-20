@@ -15,9 +15,10 @@ interface PantryApiItem {
 
 interface ProductApiItem {
   productId: string
-  categoryId: string | null
-  name: string
-  unit: string
+  productName: string
+  groceryType: string | null
+  sellingWeightKg: number | null
+  sellingVolumeL: number | null
 }
 
 interface PantryDisplayItem {
@@ -26,6 +27,17 @@ interface PantryDisplayItem {
   quantity: number
   unit: string
   lowStock: boolean
+}
+
+const getProductSize = (product: ProductApiItem): string => {
+  if (product.sellingWeightKg != null) {
+    return `${product.sellingWeightKg} kg`
+  }
+
+  if (product.sellingVolumeL != null) {
+    return `${product.sellingVolumeL} L`
+  }
+  return ''
 }
 
 function Pantry({
@@ -41,16 +53,21 @@ function Pantry({
   const [error, setError] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
   const [newItemName, setNewItemName] = useState('')
-  const [newItemUnit, setNewItemUnit] = useState('')
   const [newItemQuantity, setNewItemQuantity] = useState(1)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editingQuantity, setEditingQuantity] = useState(1)
+
+  const[productResults, setProductResults] = useState<ProductApiItem[]>([])
+  const[selectedProduct, setSelectedProduct] = useState<ProductApiItem | null>(null)
+
   // Temporary until the authentication service provides the logged-in user's UUID.
   const TEMP_USER_ID = '00000000-0000-0000-0000-000000000001'
+
   const loadPantry = async () => {
       try {
       setLoading(true)
       setError('')
+
       const pantryResponse = await fetch(
         `http://localhost:8087/pantry-items?userId=${TEMP_USER_ID}`
       )
@@ -58,20 +75,24 @@ function Pantry({
         throw new Error('Could not load pantry')
       }
       const pantryData: PantryApiItem[] = await pantryResponse.json()
+
       const displayItems = await Promise.all(
         pantryData.map(async (pantryItem) => {
           const productResponse = await fetch(
             `http://localhost:8082/products/${pantryItem.product_id}`
           )
+
           if (!productResponse.ok) {
             throw new Error('Could not load product')
           }
+
           const product: ProductApiItem = await productResponse.json()
+
           return {
             id: pantryItem.pantry_item_id,
-            name: product.name,
+            name: product.productName,
             quantity: pantryItem.quantity,
-            unit: product.unit,
+            unit: getProductSize(product),
             lowStock: pantryItem.quantity <= 1,
           }
         })
@@ -88,61 +109,91 @@ function Pantry({
     loadPantry()
   }, [])
 
-const handleAddPantryItem = async () => {
-  const trimmedName = newItemName.trim()
-  const trimmedUnit = newItemUnit.trim()
-  if (!trimmedName || !trimmedUnit || newItemQuantity < 1) {
-    return
-  }
-  try {
-    setError('')
-    // Get the available products from the Catalog service.
-    const productsResponse = await fetch('http://localhost:8082/products')
-    if (!productsResponse.ok) {
-      throw new Error('Could not load products')
-    }
-    const products: ProductApiItem[] = await productsResponse.json()
-    // Find the product matching the name and unit entered by the user.
-    const matchingProduct = products.find(
-      (product) =>
-        product.name.toLowerCase() === trimmedName.toLowerCase() &&
-        product.unit.toLowerCase() === trimmedUnit.toLowerCase()
-    )
-    if (!matchingProduct) {
-      setError('Product not found in catalogue.')
+  const handleProductSearch = async (value: string) => {
+    setNewItemName(value)
+    setSelectedProduct(null)
+
+    if (value.trim().length < 2) {
+      setProductResults([])
       return
     }
-    // Add the matching product to the user's pantry.
-    const params = new URLSearchParams({
-      userId: TEMP_USER_ID,
-      productId: matchingProduct.productId,
-      quantity: String(newItemQuantity),
-    })
+
+    try {
+      const response = await fetch(
+          `http://localhost:8082/products/search?query=${encodeURIComponent(value)}`
+      )
+
+      if (!response.ok) {
+        throw new Error('Could not search products')
+      }
+
+      const products: ProductApiItem[] = await response.json()
+
+      setProductResults(products)
+    } catch (err) {
+      console.error(err)
+      setProductResults([])
+    }
+  }
+
+  const handleAddPantryItem = async () => {
+
+    if (!selectedProduct || newItemQuantity < 1) {
+      return
+  }
+
+    try {
+      setError('')
+
+      const params = new URLSearchParams({
+        userId: TEMP_USER_ID, // TODO: replace with real userid
+        productId: selectedProduct.productId,
+        quantity: String(newItemQuantity),
+      })
+
+      const response = await fetch(
+          `http://localhost:8087/pantry-items?${params.toString()}`,
+          {
+            method: 'POST',
+          }
+      )
+
+      if (!response.ok) {
+        throw new Error('Could not add pantry item')
+      }
+
+      // reload pantry from backend
+      await loadPantry()
+
+      setNewItemName('')
+      setSelectedProduct(null)
+      setProductResults([])
+      setNewItemQuantity(1)
+      setShowAddForm(false)
+    } catch (err) {
+      console.error(err)
+      setError('Unable to add pantry item')
+    }
+}
+
+const handleRemovePantryItem = async (id: string) => {
+  try {
+    setError('')
+
     const response = await fetch(
-      `http://localhost:8087/pantry-items?${params.toString()}`,
+      `http://localhost:8087/pantry-items/${id}`,
       {
-        method: 'POST',
+        method: 'DELETE',
       }
     )
     if (!response.ok) {
-      throw new Error('Could not add pantry item')
+      throw new Error('Could not remove pantry item')
     }
-    setNewItemName('')
-    setNewItemUnit('')
-    setNewItemQuantity(1)
-    setShowAddForm(false)
     await loadPantry()
-
   } catch (err) {
     console.error(err)
-    setError('Unable to add pantry item.')
+    setError('Unable to remove pantry item.')
   }
-}
-
-const handleRemovePantryItem = (id: string) => {
-  setPantryItems((currentItems) =>
-    currentItems.filter((item) => item.id !== id)
-  )
 }
 
 const handleStartEdit = (item: PantryDisplayItem) => {
@@ -150,22 +201,35 @@ const handleStartEdit = (item: PantryDisplayItem) => {
   setEditingQuantity(item.quantity)
 }
 
-const handleSaveEdit = (id: string) => {
+const handleSaveEdit = async (id: string) => {
   if (editingQuantity < 1) {
     return
   }
-  setPantryItems((currentItems) =>
-    currentItems.map((item) =>
-      item.id === id
-        ? {
-            ...item,
-            quantity: editingQuantity,
-            lowStock: editingQuantity <= 1,
-          }
-        : item
+
+  try {
+    setError('')
+
+    const params = new URLSearchParams({
+      quantity: String(editingQuantity),
+    })
+
+    const response = await fetch(
+      `http://localhost:8087/pantry-items/${id}?${params.toString()}`,
+      {
+        method: 'PUT',
+      }
     )
-  )
-  setEditingItemId(null)
+
+    if (!response.ok) {
+      throw new Error('Could not update pantry item')
+    }
+
+    setEditingItemId(null)
+    await loadPantry()
+  } catch (err) {
+    console.error(err)
+    setError('Unable to update pantry item.')
+  }
 }
 
   return (
@@ -187,17 +251,33 @@ const handleSaveEdit = (id: string) => {
         {showAddForm && (
           <div className="add-pantry-form">
             <input
-              type="text"
-              placeholder="Item name"
-              value={newItemName}
-              onChange={(event) => setNewItemName(event.target.value)}
+                type="text"
+                placeholder={"Search products..."}
+                value={newItemName}
+                onChange={(event) => handleProductSearch(event.target.value)
+            }
             />
-            <input
-              type="text"
-              placeholder="Unit (e.g. 2L)"
-              value={newItemUnit}
-              onChange={(event) => setNewItemUnit(event.target.value)}
-            />
+
+            {productResults.length > 0 && !selectedProduct && (
+                <div className="product-dropdown">
+                  {productResults.map((product) =>
+                  <button
+                      type="button"
+                      key={product.productId}
+                      className="product-dropdown-item"
+                      onClick={() => {
+                        setSelectedProduct(product)
+                        setNewItemName(`${product.productName} - ${getProductSize(product)}`
+                        )
+                        setProductResults([])
+                      }}
+                  >
+                    <span>{product.productName}</span>
+                    <span>{getProductSize(product)}</span>
+                  </button>
+                  )}
+                </div>
+            )}
             <input
               type="number"
               min="1"
