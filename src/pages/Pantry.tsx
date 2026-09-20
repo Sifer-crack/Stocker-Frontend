@@ -54,6 +54,7 @@ function Pantry({
   const [newItemQuantity, setNewItemQuantity] = useState(1)
   const [searchResults, setSearchResults] = useState<ProductApiItem[]>([])
   const [selectedProduct, setSelectedProduct] = useState<ProductApiItem | null>(null)
+  const [hasSearched, setHasSearched] = useState(false)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editingQuantity, setEditingQuantity] = useState(1)
   // Temporary until the authentication service provides the logged-in user's UUID.
@@ -99,6 +100,15 @@ function Pantry({
     loadPantry()
   }, [])
 
+const resetAddForm = () => {
+  setNewItemName('')
+  setNewItemQuantity(1)
+  setSearchResults([])
+  setSelectedProduct(null)
+  setHasSearched(false)
+  setError('')
+}
+
 const handleSearchProducts = async () => {
   const trimmedName = newItemName.trim()
 
@@ -121,6 +131,7 @@ const handleSearchProducts = async () => {
     const products: ProductApiItem[] = await response.json()
     setSearchResults(products)
     setSelectedProduct(null)
+    setHasSearched(true)
   } catch (err) {
     console.error(err)
     setError('Unable to search products.')
@@ -128,8 +139,13 @@ const handleSearchProducts = async () => {
 }
 
 const handleAddPantryItem = async () => {
-  if (!selectedProduct || newItemQuantity < 1) {
+  if (!selectedProduct) {
     setError('Please select a product first.')
+    return
+  }
+
+  if (!Number.isInteger(newItemQuantity) || newItemQuantity < 1) {
+    setError('Quantity must be a whole number of at least 1.')
     return
   }
 
@@ -192,7 +208,8 @@ const handleStartEdit = (item: PantryDisplayItem) => {
 }
 
 const handleSaveEdit = async (id: string) => {
-  if (editingQuantity < 1) {
+  if (!Number.isInteger(editingQuantity) || editingQuantity < 1) {
+    setError('Quantity must be a whole number of at least 1.')
     return
   }
 
@@ -233,7 +250,12 @@ const handleSaveEdit = async (id: string) => {
         <button
           type="button"
           className="add-pantry-button"
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={() => {
+            if (showAddForm) {
+              resetAddForm()
+            }
+            setShowAddForm(!showAddForm)
+          }}
         >
           {showAddForm ? 'Cancel' : '+ Add Pantry Item'}
         </button>
@@ -247,6 +269,8 @@ const handleSaveEdit = async (id: string) => {
               onChange={(event) => {
                 setNewItemName(event.target.value)
                 setSelectedProduct(null)
+                setSearchResults([])
+                setHasSearched(false)
               }}
             />
 
@@ -270,6 +294,11 @@ const handleSaveEdit = async (id: string) => {
                 ))}
               </div>
             )}
+
+            {hasSearched && searchResults.length === 0 && (
+              <p>No products found.</p>
+            )}
+
             <input
               type="number"
               min="1"
