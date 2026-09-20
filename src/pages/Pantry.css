@@ -68,6 +68,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 20px;
   padding: 22px 24px;
   border-bottom: 1px solid #edf0eb;
@@ -135,6 +136,47 @@
 
 .remove-pantry-button:hover {
   background: #fef3f2;
+}
+
+.nutrition-panel {
+  flex-basis: 100%;
+  background: #f7f8f5;
+  border: 1px solid #e2e8e0;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.nutrition-error {
+  color: #b42318;
+}
+
+.nutrition-match {
+  margin: 0 0 12px;
+  color: #173022;
+  font-size: 14px;
+}
+
+.nutrition-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.nutrition-table th,
+.nutrition-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e3e8e1;
+}
+
+.nutrition-table th {
+  color: #65756b;
+  font-weight: 600;
+}
+
+.nutrition-per100 {
+  color: #65756b;
+  font-size: 12px;
 }
 
 @media (max-width: 800px) {
