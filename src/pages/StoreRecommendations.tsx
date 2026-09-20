@@ -1,17 +1,22 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './StoreRecommendations.css'
 
 interface StoreRecommendationsProps {
   items: string[]
-  onBack: () => void
   onChooseOption: (option: string) => void
 }
 
 function StoreRecommendations({
   items,
-  onBack,
   onChooseOption,
 }: StoreRecommendationsProps) {
+  const navigate = useNavigate()
+  const handleBack = () => navigate('/shopping-list')
+  const handleChooseOption = (option: string) => {
+    onChooseOption(option)
+    navigate('/shopping-route')
+  }
   const [shoppingMode, setShoppingMode] = useState<
   'in-store' | 'click-collect' | 'delivery'
 >('in-store')
@@ -374,7 +379,7 @@ const inStoreRecommendation = multiStoreIsBest
             <h2>No shopping list yet</h2>
             <p>Add some items before comparing stores.</p>
 
-            <button type="button" onClick={onBack}>
+            <button type="button" onClick={handleBack}>
               Back to Shopping List
             </button>
           </section>
@@ -435,7 +440,7 @@ const inStoreRecommendation = multiStoreIsBest
 
               <button
                 type="button"
-                onClick={() => onChooseOption(currentMode.bestTitle)}
+                onClick={() => handleChooseOption(currentMode.bestTitle)}
               >
                 Choose this option
               </button>
@@ -474,7 +479,7 @@ const inStoreRecommendation = multiStoreIsBest
 
               <button
                 type="button"
-                onClick={() => onChooseOption(currentMode.secondTitle)}
+                onClick={() => handleChooseOption(currentMode.secondTitle)}
               >
                 Choose
               </button>
@@ -512,7 +517,7 @@ const inStoreRecommendation = multiStoreIsBest
 
               <button
                 type="button"
-                onClick={() => onChooseOption(currentMode.thirdTitle)}
+                onClick={() => handleChooseOption(currentMode.thirdTitle)}
               >
                 Choose
               </button>

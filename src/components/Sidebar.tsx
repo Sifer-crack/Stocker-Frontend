@@ -1,26 +1,25 @@
+import { NavLink } from 'react-router-dom'
 import './Sidebar.css'
 
 interface SidebarProps {
-  currentPage: string
   weeklyBudget: number
   estimatedCost: number
-  onNavigate: (page: string) => void
 }
 
-function Sidebar({ currentPage, weeklyBudget, estimatedCost, onNavigate }: SidebarProps) {
+function Sidebar({ weeklyBudget, estimatedCost }: SidebarProps) {
   const remainingBudget = weeklyBudget - estimatedCost
   const budgetUsedPercentage =
     weeklyBudget > 0
       ? Math.min((estimatedCost / weeklyBudget) * 100, 100)
       : 0
   const navItems = [
-    { label: 'Dashboard', page: 'dashboard' },
-    { label: 'My Pantry', page: 'pantry' },
-    { label: 'Shopping List', page: 'shopping-list' },
-    { label: 'Shopping Options', page: 'store-recommendations' },
-    { label: 'Shopping Route', page: 'shopping-route' },
-    { label: 'Grocery Budget', page: 'grocery-budget' },
-    { label: 'Account', page: 'account' },
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'My Pantry', path: '/pantry' },
+    { label: 'Shopping List', path: '/shopping-list' },
+    { label: 'Shopping Options', path: '/store-recommendations' },
+    { label: 'Shopping Route', path: '/shopping-route' },
+    { label: 'Grocery Budget', path: '/grocery-budget' },
+    { label: 'Account', path: '/account' },
   ]
 
   return (
@@ -32,19 +31,16 @@ function Sidebar({ currentPage, weeklyBudget, estimatedCost, onNavigate }: Sideb
 
       <nav className="sidebar-nav">
         {navItems.map((item) => (
-          <button
-            key={item.page}
-            type="button"
-            className={
-              currentPage === item.page
-                ? 'sidebar-nav-item active'
-                : 'sidebar-nav-item'
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              isActive ? 'sidebar-nav-item active' : 'sidebar-nav-item'
             }
-            onClick={() => onNavigate(item.page)}
           >
             <span className="nav-dot"></span>
             {item.label}
-          </button>
+          </NavLink>
         ))}
       </nav>
 
