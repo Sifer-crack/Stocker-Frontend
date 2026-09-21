@@ -1,0 +1,171 @@
+.account-page {
+  min-height: 100vh;
+  background: #f7f8f5;
+  color: #173022;
+}
+
+.account-header {
+  padding: 36px 44px 20px;
+  border-bottom: 1px solid #e3e8e1;
+}
+
+.account-header h1 {
+  margin: 0 0 8px;
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.account-header p {
+  margin: 0;
+  color: #65756b;
+  font-size: 16px;
+}
+
+.account-content {
+  padding: 32px 44px;
+  max-width: 950px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.account-card {
+  background: #ffffff;
+  border: 1px solid #e2e8e0;
+  border-radius: 18px;
+  padding: 24px;
+}
+
+.account-card:first-child {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.account-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #198754;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.account-card h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+}
+
+.account-card p {
+  margin: 0;
+  color: #65756b;
+}
+
+.account-details {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.account-details > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #edf0eb;
+}
+
+.account-details > div:last-child {
+  border-bottom: none;
+}
+
+.account-details span {
+  color: #65756b;
+}
+
+.account-details strong {
+  text-align: right;
+}
+
+.account-budget {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.account-budget > div:last-of-type {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.account-budget label {
+  color: #65756b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.account-budget input {
+  width: 100%;
+  max-width: 320px;
+  padding: 12px 14px;
+  border: 1px solid #d8dfd6;
+  border-radius: 10px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.account-budget input:focus {
+  outline: none;
+  border-color: #198754;
+}
+
+.account-budget button {
+  width: fit-content;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 10px;
+  background: #198754;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-budget button:hover {
+  background: #157347;
+}
+
+.account-budget .budget-error {
+  color: #b42318;
+  font-size: 14px;
+}
+
+.account-budget .budget-message {
+  color: #198754;
+  font-size: 14px;
+}
+
+@media (max-width: 800px) {
+  .account-header,
+  .account-content {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .account-details > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .account-details strong {
+    text-align: left;
+  }
+}

@@ -1,121 +1,133 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import Login from './pages/Login'
+import SignUp from './pages/SignUp'
+import Dashboard from './pages/Dashboard'
+import ShoppingList from './pages/ShoppingList'
+import StoreRecommendations from './pages/StoreRecommendations'
+import Sidebar from './components/Sidebar'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import { useAuth } from './context/AuthContext'
 import './App.css'
+import ShoppingRoute from './pages/ShoppingRoute'
+import Pantry from './pages/Pantry'
+import Account from './pages/Account'
+import { LandingPage } from './landing-page'
+
+function AppLayout({ estimatedCost }: { estimatedCost: number }) {
+  return (
+    <div className="app-layout">
+      <Sidebar estimatedCost={estimatedCost} />
+      <div className="app-content">
+        <Outlet />
+      </div>
+    </div>
+  )
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { accessToken, loading } = useAuth()
+  const [items, setItems] = useState<string[]>([])
+  const [selectedOption, setSelectedOption] = useState('')
+
+  const itemPrices: Record<string, number> = {
+    milk: 4.80,
+    bread: 3.50,
+    egg: 6.20,
+    eggs: 6.20,
+    cheese: 8.90,
+    butter: 6.50,
+    chicken: 12.40,
+    rice: 4.30,
+    pasta: 3.20,
+    apples: 5.60,
+  }
+  const estimatedCost = items.reduce((total, item) => {
+    const price = itemPrices[item.toLowerCase()] ?? 5.00
+    return total + price
+  }, 0)
+
+  const handleAddToShoppingList = (item: string) => {
+    setItems((currentItems) => {
+      if (currentItems.includes(item)) {
+        return currentItems
+      }
+      return [...currentItems, item]
+    })
+  }
+
+  const handleChooseOption = (option: string) => {
+    setSelectedOption(option)
+  }
+
+  if (loading) {
+    return <div>Loading...</div>
+  }
+
+  const isLoggedIn = accessToken !== null
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route
+        path="/login"
+        element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />}
+      />
+      <Route
+        path="/signup"
+        element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <SignUp />}
+      />
 
-      <div className="ticks"></div>
+      <Route
+        element={
+          <ProtectedRoute>
+            <AppLayout estimatedCost={estimatedCost} />
+          </ProtectedRoute>
+        }
+      >
+        <Route
+          path="/dashboard"
+          element={
+            <Dashboard
+              items={items}
+              estimatedCost={estimatedCost}
+            />
+          }
+        />
+        <Route
+          path="/pantry"
+          element={<Pantry onAddToShoppingList={handleAddToShoppingList} />}
+        />
+        <Route
+          path="/shopping-list"
+          element={
+            <ShoppingList
+              items={items}
+              setItems={setItems}
+            />
+          }
+        />
+        <Route
+          path="/store-recommendations"
+          element={
+            <StoreRecommendations items={items} onChooseOption={handleChooseOption} />
+          }
+        />
+        <Route
+          path="/shopping-route"
+          element={
+            selectedOption === '' ? (
+              <Navigate to="/store-recommendations" replace />
+            ) : (
+              <ShoppingRoute selectedOption={selectedOption} />
+            )
+          }
+        />
+        <Route path="/account" element={<Account />} />
+      </Route>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 
