@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import './Sidebar.css'
 import { useUser } from '../context/UserContext'
+import { useAuth } from '../context/AuthContext'
 
 interface SidebarProps {
   estimatedCost: number
@@ -8,6 +9,7 @@ interface SidebarProps {
 
 function Sidebar({ estimatedCost }: SidebarProps) {
   const { user } = useUser()
+  const { logout } = useAuth()
 
   const weeklyBudget = user?.groceryBudget ?? 0
   const remainingBudget = weeklyBudget - estimatedCost
@@ -75,6 +77,9 @@ function Sidebar({ estimatedCost }: SidebarProps) {
             </strong>
             <p>{user?.email ?? ''}</p>
           </div>
+          <button type="button" onClick={logout}>
+            Log out
+          </button>
         </section>
       </div>
     </aside>
