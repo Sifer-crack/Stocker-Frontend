@@ -1,140 +1,131 @@
 .pricing-page {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  text-align: left;
-  color: var(--text);
-  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 36px 44px 64px;
+  background: #f7f8f5;
+  color: #173022;
 }
 
-.pricing-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 2rem;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(8px);
+.pricing-intro h1 {
+  margin: 0 0 6px;
+  font-size: 34px;
 }
 
-.pricing-intro {
-  padding: 3rem 2rem 1rem;
-  max-width: 760px;
+.pricing-intro p {
+  margin: 0;
+  max-width: 720px;
+  color: #718075;
+  font-size: 17px;
+  line-height: 1.5;
 }
 
 .pricing-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 1.5rem;
-  padding: 1rem 2rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 1000px;
+  margin-top: 32px;
 }
 
 .pricing-card {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.5rem;
-  background: var(--code-bg);
+  padding: 28px;
+  background: #ffffff;
+  border: 1px solid #dfe5dc;
+  border-radius: 24px;
 }
 
 .pricing-card h3 {
-  margin: 0 0 0.4rem;
-  color: var(--text-h);
-  font-size: 1.15rem;
+  margin: 0 0 6px;
+  font-size: 21px;
 }
 
 .pricing-card-lead {
-  margin-bottom: 1rem;
-  font-size: 0.92rem;
+  margin: 0 0 18px;
+  color: #718075;
+  font-size: 15px;
+}
+
+.pricing-card .pricing-table-wrap {
+  margin-top: 20px;
 }
 
 .pricing-form {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 14px;
+}
+
+.pricing-form-inline {
+  flex-direction: row;
+  align-items: flex-end;
 }
 
 .pricing-field {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.85rem;
+  gap: 6px;
+  color: #718075;
+  font-size: 14px;
+}
+
+.pricing-field-grow {
+  flex: 1;
 }
 
 .pricing-field input,
-.pricing-item-row input {
-  padding: 0.5rem 0.65rem;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text-h);
-  font: inherit;
-  font-size: 0.95rem;
+.pricing-field select {
+  padding: 12px 14px;
+  border: 1px solid #d7dfd4;
+  border-radius: 12px;
+  background: #fbfcfa;
+  color: #173022;
+  font-size: 16px;
 }
 
-.pricing-item-rows {
+.pricing-item-summary {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.pricing-item-row {
-  display: grid;
-  grid-template-columns: 1fr 90px auto;
-  gap: 0.5rem;
-  align-items: center;
+.pricing-item-summary li {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #eef3ec;
+  color: #173022;
+  font-size: 14px;
 }
 
-.pricing-remove-row {
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
+.pricing-summary {
+  margin: 20px 0 0;
+  font-size: 17px;
+}
+
+.pricing-btn {
+  align-self: flex-start;
+  padding: 12px 22px;
+  border: 1px solid #198754;
+  border-radius: 12px;
+  background: #198754;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.pricing-remove-row:disabled {
-  opacity: 0.4;
+.pricing-form-inline .pricing-btn {
+  align-self: flex-end;
+}
+
+.pricing-btn:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
-.pricing-error {
-  margin-top: 1rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: 8px;
-  background: rgba(220, 38, 38, 0.1);
-  color: #dc2626;
-  font-size: 0.9rem;
-}
-
-.pricing-empty {
-  margin-top: 1rem;
-  font-size: 0.9rem;
-}
-
-.pricing-table {
-  margin-top: 1.25rem;
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.88rem;
-}
-
-.pricing-table th,
-.pricing-table td {
-  text-align: left;
-  padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.pricing-table th {
-  color: var(--text-h);
-  font-weight: 600;
-}
-
-.pricing-row-best {
-  background: var(--accent-bg);
+@media (max-width: 1100px) {
+  .pricing-page {
+    padding: 24px 20px 48px;
+  }
 }

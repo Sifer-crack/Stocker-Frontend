@@ -1,4 +1,5 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import './LandingPage.css'
 
 interface Feature {
@@ -18,105 +19,107 @@ interface Offering {
 
 const VALUES = [
   {
-    title: 'Precision-first scraping',
+    title: 'Save Money',
     description:
-      'Engineered specifically for Canvas LMS hierarchies: modules, quizzes, gradebooks, announcements, and asset trees extracted with zero data loss.',
+      'Compare supermarket options and find the combination of stores that can reduce the total cost of your shopping.',
   },
   {
-    title: 'Real-time synchronization',
+    title: 'Stay Organised',
     description:
-      'Scheduled background workers monitor course updates, syllabus alterations, and deadline changes to keep student and faculty tools current.',
+      'Keep track of what is already in your pantry and build a shopping list around what you actually need.',
   },
   {
-    title: 'Developer-grade exports',
+    title: 'Shop Efficiently',
     description:
-      'Normalized JSON pipelines, SQL adapters, and document bundles optimized for downstream AI assistants, study planners, and LMS migrations.',
+      'Balance grocery prices with travel, delivery, and collection options to choose a shopping plan that works for you.',
   },
 ]
 
 const FEATURES: Feature[] = [
   {
-    id: 'deep-harvest',
-    tag: 'Extraction',
-    title: 'Deep Course Harvesting',
+    id: 'pantry',
+    tag: 'Pantry',
+    title: 'Pantry Management',
     description:
-      'Parse nested Canvas modules, rich content pages, file attachments, assignment instructions, and embedded media with integrity verification.',
+      'Keep track of the groceries you already have at home and quickly add low-stock items to your shopping list.',
   },
   {
-    id: 'smart-sync',
-    tag: 'Automation',
-    title: 'Automated Delta Syncing',
+    id: 'shopping-list',
+    tag: 'Planning',
+    title: 'Smart Shopping Lists',
     description:
-      'Only fetch what changed. Delta tokens and hash comparisons ensure minimal API/network footprint while keeping course states fresh.',
+      'Create and manage your grocery list, mark items as completed, and keep your shopping organised from start to finish.',
   },
   {
-    id: 'structured-pipeline',
-    tag: 'Transformation',
-    title: 'Normalized Data Pipelines',
+    id: 'price-comparison',
+    tag: 'Savings',
+    title: 'Supermarket Price Comparison',
     description:
-      'Transform complex Canvas structures into clean, standardized schemas ready for relational stores, vector embeddings, or offline archives.',
+      'Compare the cost of your shopping list across supermarkets and see which option gives you the best overall value.',
   },
   {
-    id: 'security-compliance',
-    tag: 'Security',
-    title: 'Secure Credential Vaulting',
+    id: 'multi-store',
+    tag: 'Optimisation',
+    title: 'Multi-Store Recommendations',
     description:
-      'Encrypted session handling, scoped token storage, and student privacy standard alignment keep credentials and educational records safe.',
+      'See when splitting your shopping across multiple stores could save money, with each item assigned to the best place to buy it.',
   },
   {
-    id: 'analytics-insights',
-    tag: 'Intelligence',
-    title: 'Academic Progress Insights',
+    id: 'budget',
+    tag: 'Budgeting',
+    title: 'Grocery Budget Tracking',
     description:
-      'Surface submission timelines, grading cadence, and workload heatmaps calculated straight from aggregated course records.',
+      'Set a grocery budget, monitor your estimated spending, and see how much of your budget remains before you shop.',
   },
   {
-    id: 'api-integrations',
-    tag: 'Ecosystem',
-    title: 'Extensible Webhooks & APIs',
+    id: 'route',
+    tag: 'Travel',
+    title: 'Shopping Route Planning',
     description:
-      'Plug scraped educational events into Discord, Slack, calendar feeds, Notion workspaces, or custom self-hosted dashboards.',
+      'Plan your trip between stores and compare in-store, click-and-collect, and delivery options before choosing how to shop.',
   },
 ]
 
 const OFFERINGS: Offering[] = [
   {
-    tier: 'Learner & Researcher',
-    audience: 'Students, TAs, and independent educational researchers',
+    tier: 'Plan Your Shop',
+    audience: 'For organising what you need before you leave home',
     highlights: [
-      'Complete offline backup of enrolled courses',
-      'Unified deadline calendar & file exporter',
-      'Markdown & JSON formatted notes exporter',
-      'Local-first storage with zero telemetry',
+      'Manage pantry items and track what you already have',
+      'Build and update your shopping list',
+      'Mark items as completed while shopping',
+      'Keep everything in one organised place',
     ],
-    actionText: 'Explore Student Tools',
+    actionText: 'Start Planning',
   },
   {
-    tier: 'Educators & Departments',
+    tier: 'Save More',
     badge: 'Popular',
-    audience: 'Faculty, curriculum teams, and academic labs',
+    audience: 'For comparing prices and getting the best value',
     highlights: [
-      'Multi-course content synchronization',
-      'Automated syllabus audit & broken link checker',
-      'Assignment and rubric dataset export for reporting',
-      'Self-hosted deployment templates (Docker / Compose)',
+      'Compare your shopping list across supermarkets',
+      'See when multiple stores can reduce the total cost',
+      'Compare in-store, delivery, and click-and-collect options',
+      'Track your estimated spend against your grocery budget',
     ],
-    actionText: 'Request Institution Demo',
+    actionText: 'Compare Options',
   },
   {
-    tier: 'Enterprise & Integrators',
-    audience: 'EdTech platforms, LMS engineers, and universities',
+    tier: 'Shop Smarter',
+    audience: 'For turning your plan into an efficient shopping trip',
     highlights: [
-      'High-throughput distributed scraping cluster',
-      'SLA-backed priority Canvas API adapter maintenance',
-      'Custom webhook triggers & cloud storage sync',
-      'Role-based access control and audit trails',
+      'Choose the shopping option that works best for you',
+      'See which store each item should be purchased from',
+      'Plan your route between multiple supermarkets',
+      'Balance savings with travel and collection costs',
     ],
-    actionText: 'Contact Engineering',
+    actionText: 'Plan Your Route',
   },
 ]
 
 export const LandingPage: React.FC = () => {
+  const navigate = useNavigate()
+  const handleGetStarted = () => navigate('/login')
   return (
     <div className="landing-page">
       {/* Navigation Bar */}
@@ -124,7 +127,7 @@ export const LandingPage: React.FC = () => {
         <div className="landing-brand">
           <span className="brand-dot" />
           <span className="brand-name">Stocker</span>
-          <span className="brand-tag">Canvas Intelligence</span>
+          <span className="brand-tag">Smart Grocery Shopping</span>
         </div>
         <nav className="landing-nav" aria-label="Main Navigation">
           <a href="#who-we-are" className="nav-link">
@@ -139,26 +142,27 @@ export const LandingPage: React.FC = () => {
           <a href="#offerings" className="nav-link">
             Offerings
           </a>
-          <a href="#/pricing" className="nav-link">
-            Price Compare
-          </a>
         </nav>
         <div className="landing-header-cta">
-          <a href="#offerings" className="cta-btn primary-btn sm">
+          <button
+            type="button"
+            className="cta-btn primary-btn sm"
+            onClick={handleGetStarted}
+          >
             Get Started
-          </a>
+          </button>
         </div>
       </header>
 
       {/* Hero Section */}
       <section className="hero-section">
-        <div className="hero-badge">Next-Generation Canvas LMS Scraping & Aggregation</div>
+        <div className="hero-badge">Smarter Grocery Planning & Price Comparison</div>
         <h1 className="hero-title">
-          Turn Canvas LMS Chaos Into <span className="highlight">Structured Intelligence</span>
+          Spend Less. Shop Smarter. <span className="highlight">Waste Less.</span>
         </h1>
         <p className="hero-subtitle">
-          Stocker bridges Canvas classrooms with developer-grade automation. Extract courseware,
-          track deadlines, and power your academic data pipelines with precision.
+            Stocker helps you manage your pantry, build shopping lists, compare supermarket prices,
+            stay within budget, and plan the best way to shop across multiple stores.
         </p>
         <div className="hero-actions">
           <a href="#offerings" className="cta-btn primary-btn">
@@ -171,16 +175,16 @@ export const LandingPage: React.FC = () => {
 
         <div className="hero-metrics">
           <div className="metric-card">
-            <span className="metric-number">100%</span>
-            <span className="metric-label">Course hierarchy fidelity</span>
+            <span className="metric-number">3+</span>
+            <span className="metric-label">Supermarkets compared</span>
           </div>
           <div className="metric-card">
-            <span className="metric-number">&lt; 2s</span>
-            <span className="metric-label">Incremental sync overhead</span>
+            <span className="metric-number">1 List</span>
+            <span className="metric-label">Across multiple stores</span>
           </div>
           <div className="metric-card">
-            <span className="metric-number">JSON / SQL</span>
-            <span className="metric-label">Ready-to-query formats</span>
+            <span className="metric-number">Smart</span>
+            <span className="metric-label">Budget & route planning</span>
           </div>
         </div>
       </section>
@@ -190,32 +194,34 @@ export const LandingPage: React.FC = () => {
         <div className="section-label">Identity</div>
         <h2 className="section-title">Who We Are</h2>
         <p className="section-lead">
-          We are builders, students, and engineers frustrated by walled-garden learning management
-          systems.
+          We are students and developers building a simpler way to plan groceries,
+          compare prices, and make every shopping trip count.        
         </p>
         <div className="who-grid">
-          <div className="who-card">
-            <h3>Specialized in Academic Data Extraction</h3>
-            <p>
-              Stocker is crafted by engineers focused on solving the structural quirks and access
-              bottlenecks common across Canvas LMS installations worldwide.
-            </p>
-          </div>
-          <div className="who-card">
-            <h3>Open & Extensible Architecture</h3>
-            <p>
-              We believe academic data belongs to learners and instructors. Our tooling provides
-              transparent, standardized interfaces to access and query that knowledge.
-            </p>
-          </div>
-          <div className="who-card">
-            <h3>Engineered for Reliability</h3>
-            <p>
-              From authentication flows to dynamic DOM parsing and API rate limiting, we build
-              resilient extraction pipelines designed to run reliably under scale.
-            </p>
-          </div>
+        <div className="who-card">
+          <h3>Built for Everyday Shoppers</h3>
+          <p>
+            Stocker brings your pantry, shopping list, grocery budget, and supermarket
+            options together in one easy-to-use place.
+          </p>
         </div>
+
+        <div className="who-card">
+          <h3>Focused on Saving Money</h3>
+          <p>
+            We help shoppers compare supermarket prices and identify when buying from
+            multiple stores could reduce the overall cost of their groceries.
+          </p>
+        </div>
+
+        <div className="who-card">
+          <h3>Smarter Shopping Decisions</h3>
+          <p>
+            Stocker considers more than item prices by helping users account for their
+            budget, shopping options, and the route between stores.
+          </p>
+        </div>
+      </div>
       </section>
 
       {/* What We Are Here For (Purpose / Mission) Section */}
@@ -223,8 +229,8 @@ export const LandingPage: React.FC = () => {
         <div className="section-label">Purpose & Mission</div>
         <h2 className="section-title">What We Are Here For</h2>
         <p className="section-lead">
-          Unlocking academic assets trapped behind complex interfaces so you can study, automate,
-          and build without friction.
+          Making grocery shopping easier, more affordable, and better organised by giving
+          shoppers the information they need to make smarter decisions.
         </p>
         <div className="values-grid">
           {VALUES.map((val) => (
@@ -246,8 +252,8 @@ export const LandingPage: React.FC = () => {
         <div className="section-label">Capabilities</div>
         <h2 className="section-title">What We Have to Offer</h2>
         <p className="section-lead">
-          A comprehensive suite of tools designed to extract, transform, and orchestrate Canvas LMS
-          data at any scale.
+          Everything you need to plan your groceries, compare your options, control your spending,
+          and organise a more efficient shopping trip.
         </p>
         <div className="features-grid">
           {FEATURES.map((feature) => (
@@ -263,10 +269,10 @@ export const LandingPage: React.FC = () => {
       {/* Offerings & Editions */}
       <section id="offerings" className="content-section alt-bg">
         <div className="section-label">Tailored Solutions</div>
-        <h2 className="section-title">Choose Your Tier</h2>
+        <h2 className="section-title">How Stocker Helps You</h2>
         <p className="section-lead">
-          Whether you need personal course archives or institutional infrastructure, Stocker scales
-          with your needs.
+          From planning your list to comparing supermarkets and organising your route,
+          Stocker helps make the whole grocery trip simpler.
         </p>
         <div className="offerings-grid">
           {OFFERINGS.map((offering) => (
@@ -294,12 +300,19 @@ export const LandingPage: React.FC = () => {
 
       {/* Call to Action Banner */}
       <section className="cta-banner">
-        <h2>Ready to unlock your Canvas data?</h2>
-        <p>Get started with Stocker and streamline your academic workflow today.</p>
+          <h2>Ready to shop smarter?</h2>
+          <p>
+            Get started with Stocker and make your next grocery shop simpler,
+            cheaper, and better organised.
+          </p>
         <div className="cta-actions">
-          <a href="#offerings" className="cta-btn primary-btn">
+          <button
+            type="button"
+            className="cta-btn primary-btn"
+            onClick={handleGetStarted}
+          >
             Get Started Now
-          </a>
+          </button>
           <a
             href="https://github.com/Sifer-crack/Stocker-Frontend"
             target="_blank"
@@ -315,7 +328,7 @@ export const LandingPage: React.FC = () => {
       <footer className="landing-footer">
         <div className="footer-content">
           <div className="footer-brand">
-            <strong>Stocker</strong> Canvas Scraper & Intelligence Suite
+            <strong>Stocker</strong> Smart Grocery Shopping
           </div>
           <div className="footer-links">
             <a href="#who-we-are">Who We Are</a>
@@ -324,7 +337,7 @@ export const LandingPage: React.FC = () => {
             <a href="#offerings">Offerings</a>
           </div>
           <p className="footer-copy">
-            &copy; {new Date().getFullYear()} Stocker Frontend. Engineered for modern education.
+            &copy; {new Date().getFullYear()} Stocker. Shop smarter, save more.
           </p>
         </div>
       </footer>

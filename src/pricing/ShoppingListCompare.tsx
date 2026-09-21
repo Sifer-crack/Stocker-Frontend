@@ -1,52 +1,59 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext.tsx'
+import { useShoppingList } from '../context/ShoppingListContext.tsx'
 import { compareShoppingList, PricingApiError } from './api.ts'
+import { CHAINS, chainLabel } from './chains.ts'
+import { formatPrice } from './format.ts'
 import type { CompareShoppingListResult } from './types.ts'
 
-interface ItemRow {
-  key: string
-  itemId: string
-  quantity: number
-}
+// Suggestions only: the backend's supported-region list is configuration and may differ, and it rejects
+// an unsupported region with a clear message that is shown below.
+const REGION_SUGGESTIONS = ['Auckland', 'Wellington', 'Christchurch']
 
-function newRow(): ItemRow {
-  return { key: crypto.randomUUID(), itemId: '', quantity: 1 }
+/** What the results were computed for, kept so they stay readable if the shopping list changes afterwards. */
+interface CompareOutcome {
+  data: CompareShoppingListResult
+  pickedChainId: string
+  requestedCount: number
+  itemNames: Record<string, string>
 }
 
 export function ShoppingListCompare() {
-  const [rows, setRows] = useState<ItemRow[]>([newRow()])
+  const { accessToken } = useAuth()
+  const { items, prices } = useShoppingList()
   const [region, setRegion] = useState('')
-  const [selectedChainId, setSelectedChainId] = useState('')
-  const [result, setResult] = useState<CompareShoppingListResult | null>(null)
+  const [preferredChainId, setPreferredChainId] = useState('')
+  const [outcome, setOutcome] = useState<CompareOutcome | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function updateRow(key: string, patch: Partial<ItemRow>) {
-    setRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)))
-  }
-
-  function removeRow(key: string) {
-    setRows((prev) => (prev.length > 1 ? prev.filter((row) => row.key !== key) : prev))
-  }
+  const stillPricing = items.filter((item) => prices[item.id]?.status === 'pending').length
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    const items = rows
-      .filter((row) => row.itemId.trim().length > 0)
-      .map((row) => ({ itemId: row.itemId.trim(), quantity: row.quantity }))
     if (items.length === 0 || !region.trim()) return
 
     setLoading(true)
     setError(null)
     try {
-      const compareResult = await compareShoppingList({
-        items,
-        region: region.trim(),
-        selectedChainId: selectedChainId.trim() || undefined,
+      const data = await compareShoppingList(
+        {
+          items: items.map((item) => ({ itemId: item.id, quantity: item.quantity })),
+          region: region.trim(),
+          selectedChainId: preferredChainId || undefined,
+        },
+        accessToken,
+      )
+      setOutcome({
+        data,
+        pickedChainId: preferredChainId,
+        requestedCount: items.length,
+        itemNames: Object.fromEntries(items.map((item) => [item.id, item.name])),
       })
-      setResult(compareResult)
     } catch (err) {
-      setResult(null)
+      setOutcome(null)
       setError(err instanceof PricingApiError ? err.message : 'Could not reach the pricing service.')
     } finally {
       setLoading(false)
@@ -55,102 +62,119 @@ export function ShoppingListCompare() {
 
   return (
     <div className="pricing-card">
-      <h3>Compare Shopping List Across Chains</h3>
+      <h3>Compare my shopping list</h3>
       <p className="pricing-card-lead">
-        Add the items on your list and see which supermarket chain comes out cheapest overall.
+        See which supermarket is cheapest for everything on your shopping list, and how much you would save.
       </p>
-      <form className="pricing-form" onSubmit={handleSubmit}>
-        <div className="pricing-item-rows">
-          {rows.map((row) => (
-            <div className="pricing-item-row" key={row.key}>
-              <input
-                value={row.itemId}
-                onChange={(e) => updateRow(row.key, { itemId: e.target.value })}
-                placeholder="item id"
-                aria-label="Item ID"
-              />
-              <input
-                type="number"
-                min={1}
-                value={row.quantity}
-                onChange={(e) => updateRow(row.key, { quantity: Math.max(1, Number(e.target.value) || 1) })}
-                aria-label="Quantity"
-              />
-              <button
-                type="button"
-                className="pricing-remove-row"
-                onClick={() => removeRow(row.key)}
-                disabled={rows.length === 1}
-                aria-label="Remove item"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-        </div>
-        <button type="button" className="cta-btn secondary-btn sm" onClick={() => setRows((prev) => [...prev, newRow()])}>
-          + Add item
-        </button>
 
-        <label className="pricing-field">
-          <span>Region</span>
-          <input value={region} onChange={(e) => setRegion(e.target.value)} placeholder="e.g. Auckland" required />
-        </label>
-        <label className="pricing-field">
-          <span>Preferred chain (optional)</span>
-          <input
-            value={selectedChainId}
-            onChange={(e) => setSelectedChainId(e.target.value)}
-            placeholder="defaults to cheapest chain"
-          />
-        </label>
+      {items.length === 0 ? (
+        <p className="pricing-empty">
+          Your shopping list is empty. <Link to="/shopping-list">Add some items</Link> first, then compare them here.
+        </p>
+      ) : (
+        <form className="pricing-form" onSubmit={handleSubmit}>
+          <ul className="pricing-item-summary" aria-label="Items being compared">
+            {items.map((item) => (
+              <li key={item.id}>
+                {item.name} × {item.quantity}
+              </li>
+            ))}
+          </ul>
 
-        <button type="submit" className="cta-btn primary-btn" disabled={loading}>
-          {loading ? 'Comparing…' : 'Compare'}
-        </button>
-      </form>
+          {stillPricing > 0 && (
+            <p className="pricing-empty">
+              {stillPricing} {stillPricing === 1 ? 'item is' : 'items are'} still being priced, so the totals may be
+              incomplete. Try again in a moment.
+            </p>
+          )}
+
+          <label className="pricing-field">
+            <span>Your region</span>
+            <input
+              list="pricing-region-suggestions"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              placeholder="e.g. Auckland"
+              required
+            />
+            <datalist id="pricing-region-suggestions">
+              {REGION_SUGGESTIONS.map((suggestion) => (
+                <option key={suggestion} value={suggestion} />
+              ))}
+            </datalist>
+          </label>
+
+          <label className="pricing-field">
+            <span>Compare savings against</span>
+            <select value={preferredChainId} onChange={(e) => setPreferredChainId(e.target.value)}>
+              <option value="">The cheapest supermarket (recommended)</option>
+              {CHAINS.map((chain) => (
+                <option key={chain.id} value={chain.id}>
+                  {chain.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button type="submit" className="pricing-btn" disabled={loading}>
+            {loading ? 'Comparing…' : 'Compare'}
+          </button>
+        </form>
+      )}
 
       {error && <p className="pricing-error">{error}</p>}
 
-      {result && (
+      {outcome && (
         <>
-          <table className="pricing-table">
-            <thead>
-              <tr>
-                <th>Chain</th>
-                <th>Total</th>
-                <th>Items priced</th>
-                <th>Unavailable</th>
-                <th>Savings</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.storeTotals.map((storeTotal) => (
-                <tr
-                  key={storeTotal.chainId}
-                  className={storeTotal.chainId === result.cheapestChainId ? 'pricing-row-best' : ''}
-                >
-                  <td>
-                    {storeTotal.chainId}
-                    {storeTotal.chainId === result.cheapestChainId && ' 🏆'}
-                    {storeTotal.chainId === result.selectedChainId && ' (selected)'}
-                  </td>
-                  <td>
-                    {storeTotal.currency} {storeTotal.totalAmount.toFixed(2)}
-                  </td>
-                  <td>{storeTotal.itemsPriced}</td>
-                  <td>{storeTotal.unavailableItemIds.length > 0 ? storeTotal.unavailableItemIds.join(', ') : '—'}</td>
-                  <td>
-                    {storeTotal.savingsAmount > 0
-                      ? `${storeTotal.currency} ${storeTotal.savingsAmount.toFixed(2)} saved`
-                      : '—'}
-                  </td>
+          <div className="pricing-table-wrap">
+            <table className="pricing-table">
+              <thead>
+                <tr>
+                  <th>Supermarket</th>
+                  <th>Total</th>
+                  <th>Items priced</th>
+                  <th>Not available</th>
+                  <th>Savings</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="pricing-card-lead">
-            Cheapest overall: <strong>{result.cheapestChainId || 'n/a'}</strong>
+              </thead>
+              <tbody>
+                {outcome.data.storeTotals.map((storeTotal) => {
+                  const isCheapest = storeTotal.chainId === outcome.data.cheapestChainId
+                  const unavailable = storeTotal.unavailableItemIds.map(
+                    (id) => outcome.itemNames[id] ?? 'Unknown item',
+                  )
+                  return (
+                    <tr key={storeTotal.chainId} className={isCheapest ? 'pricing-row-best' : ''}>
+                      <td>
+                        {chainLabel(storeTotal.chainId)}
+                        {isCheapest && <span className="pricing-tag">Cheapest</span>}
+                        {storeTotal.chainId === outcome.pickedChainId && (
+                          <span className="pricing-tag pricing-tag-muted">Your pick</span>
+                        )}
+                      </td>
+                      <td>
+                        <strong>{formatPrice(storeTotal.totalAmount, storeTotal.currency)}</strong>
+                      </td>
+                      <td>
+                        {storeTotal.itemsPriced} of {outcome.requestedCount}
+                      </td>
+                      <td>{unavailable.length > 0 ? unavailable.join(', ') : '—'}</td>
+                      <td>
+                        {storeTotal.savingsAmount > 0
+                          ? `${formatPrice(storeTotal.savingsAmount, storeTotal.currency)} saved`
+                          : '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="pricing-empty">
+            Cheapest overall:{' '}
+            <strong>{outcome.data.cheapestChainId ? chainLabel(outcome.data.cheapestChainId) : 'n/a'}</strong>.
+            Savings are measured against {chainLabel(outcome.data.selectedChainId)}{' '}
+            {outcome.pickedChainId ? '(your pick)' : '(the cheapest supermarket)'}.
           </p>
         </>
       )}

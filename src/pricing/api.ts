@@ -1,11 +1,11 @@
+import { API_BASE } from '../lib/apiConfig.ts'
+import { authFetch, readErrorMessage } from '../lib/authFetch.ts'
 import type {
-  ApiErrorBody,
   CompareShoppingListResult,
+  MatchItemResponse,
   SearchResultResponse,
   ShoppingListItemInput,
 } from './types.ts'
-
-const API_BASE_URL = (import.meta.env.VITE_GATEWAY_BASE_URL as string | undefined) ?? 'http://localhost:8080'
 
 export class PricingApiError extends Error {
   status: number
@@ -16,14 +16,13 @@ export class PricingApiError extends Error {
   }
 }
 
-async function parseErrorMessage(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as ApiErrorBody
-    if (body.error) return body.error
-  } catch {
-    // response body wasn't JSON (or was empty) - fall through to the status text below.
+/** Every /api/pricing/** call needs the gateway JWT, so all requests go through authFetch. */
+async function requestJson<T>(url: string, accessToken: string | null, init?: RequestInit): Promise<T> {
+  const response = await authFetch(url, accessToken, init)
+  if (!response.ok) {
+    throw new PricingApiError(response.status, await readErrorMessage(response))
   }
-  return response.statusText || `Request failed with status ${response.status}`
+  return (await response.json()) as T
 }
 
 export interface SearchPricesParams {
@@ -33,18 +32,13 @@ export interface SearchPricesParams {
   category?: string
 }
 
-export async function searchPrices(params: SearchPricesParams): Promise<SearchResultResponse> {
+export function searchPrices(params: SearchPricesParams, accessToken: string | null): Promise<SearchResultResponse> {
   const query = new URLSearchParams({ term: params.term, itemId: params.itemId })
   if (params.category) query.set('category', params.category)
   for (const storeUrl of params.storeUrls ?? []) {
     query.append('storeUrls', storeUrl)
   }
-
-  const response = await fetch(`${API_BASE_URL}/api/pricing/search?${query.toString()}`)
-  if (!response.ok) {
-    throw new PricingApiError(response.status, await parseErrorMessage(response))
-  }
-  return (await response.json()) as SearchResultResponse
+  return requestJson<SearchResultResponse>(`${API_BASE}/api/pricing/search?${query.toString()}`, accessToken)
 }
 
 export interface CompareShoppingListParams {
@@ -53,10 +47,11 @@ export interface CompareShoppingListParams {
   selectedChainId?: string
 }
 
-export async function compareShoppingList(
+export function compareShoppingList(
   params: CompareShoppingListParams,
+  accessToken: string | null,
 ): Promise<CompareShoppingListResult> {
-  const response = await fetch(`${API_BASE_URL}/api/pricing/compare`, {
+  return requestJson<CompareShoppingListResult>(`${API_BASE}/api/pricing/compare`, accessToken, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -65,8 +60,21 @@ export async function compareShoppingList(
       selectedChainId: params.selectedChainId || null,
     }),
   })
-  if (!response.ok) {
-    throw new PricingApiError(response.status, await parseErrorMessage(response))
-  }
-  return (await response.json()) as CompareShoppingListResult
+}
+
+export interface MatchItemParams {
+  /** What the user typed, e.g. "full cream milk 2L"; matched semantically per chain. */
+  term: string
+  /** The shopping-list item's id; the backend stores the matched prices under it. */
+  itemId: string
+  category?: string
+  signal?: AbortSignal
+}
+
+export function matchItem(params: MatchItemParams, accessToken: string | null): Promise<MatchItemResponse> {
+  const query = new URLSearchParams({ term: params.term, itemId: params.itemId })
+  if (params.category) query.set('category', params.category)
+  return requestJson<MatchItemResponse>(`${API_BASE}/api/pricing/match?${query.toString()}`, accessToken, {
+    signal: params.signal,
+  })
 }

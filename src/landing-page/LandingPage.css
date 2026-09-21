@@ -416,14 +416,17 @@
   font-family: inherit;
 }
 
-.cta-btn.sm {
-  padding: 0.45rem 0.9rem;
-  font-size: 0.85rem;
+.cta-btn.primary-btn {
+  background: #198754;
+  color: #ffffff;
+  border: 1px solid #198754;
 }
 
-.cta-btn.primary-btn {
-  background: var(--accent);
-  color: #fff;
+.cta-btn.primary-btn:hover {
+  background: #157347;
+  border-color: #157347;
+  filter: none;
+  transform: translateY(-1px);
 }
 
 .cta-btn.primary-btn:hover {
