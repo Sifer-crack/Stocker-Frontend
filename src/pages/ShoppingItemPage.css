@@ -1,0 +1,59 @@
+/* The header/shell come from ShoppingList.css (.shopping-page, .shopping-header). */
+
+.shopping-header-actions .item-compare-link {
+  display: inline-flex;
+  align-items: center;
+}
+
+.shopping-header-actions .item-remove-btn {
+  border: 1px solid #d4ddd1;
+  background: #ffffff;
+  color: #b42318;
+}
+
+.shopping-header-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.item-page-body {
+  margin: 36px 44px;
+  padding: 28px;
+  background: #ffffff;
+  border: 1px solid #dfe5dc;
+  border-radius: 24px;
+}
+
+.item-status {
+  margin: 0 0 16px;
+  color: #718075;
+  font-size: 16px;
+}
+
+.item-summary {
+  margin: 0 0 16px;
+  color: #173022;
+  font-size: 17px;
+}
+
+.item-note {
+  margin: 16px 0 0;
+  color: #879488;
+  font-size: 14px;
+}
+
+.item-table-wrap {
+  overflow-x: auto;
+}
+
+@media (max-width: 1100px) {
+  .item-page-body {
+    margin: 24px 20px;
+    padding: 20px;
+  }
+}
+
+.shopping-header-actions .item-compare-link,
+.shopping-header-actions button {
+  white-space: nowrap;
+}

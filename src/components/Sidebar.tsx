@@ -21,6 +21,7 @@ function Sidebar({ estimatedCost }: SidebarProps) {
     { label: 'Dashboard', path: '/dashboard' },
     { label: 'My Pantry', path: '/pantry' },
     { label: 'Shopping List', path: '/shopping-list' },
+    { label: 'Price Search', path: '/pricing' },
     { label: 'Shopping Options', path: '/store-recommendations' },
     { label: 'Shopping Route', path: '/shopping-route' },
     { label: 'Account', path: '/account' },

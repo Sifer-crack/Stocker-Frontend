@@ -1,0 +1,81 @@
+/* Shared by the manual search/compare tools and the per-item chain comparison table. */
+
+.pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+  color: #173022;
+}
+
+.pricing-table th,
+.pricing-table td {
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e8ece6;
+  vertical-align: top;
+}
+
+.pricing-table th {
+  color: #718075;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pricing-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.pricing-row-best {
+  background: #eaf6ef;
+}
+
+.pricing-muted {
+  color: #879488;
+}
+
+.pricing-table a {
+  color: #198754;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pricing-table a:hover {
+  text-decoration: underline;
+}
+
+.pricing-error {
+  margin: 16px 0 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fdecec;
+  color: #b42318;
+  font-size: 15px;
+}
+
+.pricing-empty {
+  margin: 16px 0 0;
+  color: #879488;
+  font-size: 15px;
+}
+
+.pricing-table-wrap {
+  overflow-x: auto;
+}
+
+.pricing-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #198754;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pricing-tag-muted {
+  background: #e0e6dd;
+  color: #173022;
+}

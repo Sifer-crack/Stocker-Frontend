@@ -4,15 +4,18 @@ import Login from './pages/Login'
 import SignUp from './pages/SignUp'
 import Dashboard from './pages/Dashboard'
 import ShoppingList from './pages/ShoppingList'
+import ShoppingItemPage from './pages/ShoppingItemPage'
 import StoreRecommendations from './pages/StoreRecommendations'
 import Sidebar from './components/Sidebar'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { useAuth } from './context/AuthContext'
+import { useShoppingList } from './context/ShoppingListContext'
 import './App.css'
 import ShoppingRoute from './pages/ShoppingRoute'
 import Pantry from './pages/Pantry'
 import Account from './pages/Account'
 import { LandingPage } from './landing-page'
+import { PricingPage } from './pricing'
 
 function AppLayout({ estimatedCost }: { estimatedCost: number }) {
   return (
@@ -27,34 +30,9 @@ function AppLayout({ estimatedCost }: { estimatedCost: number }) {
 
 function App() {
   const { accessToken, loading } = useAuth()
-  const [items, setItems] = useState<string[]>([])
+  const { items, estimatedCost, addItem } = useShoppingList()
+  const itemNames = items.map((item) => item.name)
   const [selectedOption, setSelectedOption] = useState('')
-
-  const itemPrices: Record<string, number> = {
-    milk: 4.80,
-    bread: 3.50,
-    egg: 6.20,
-    eggs: 6.20,
-    cheese: 8.90,
-    butter: 6.50,
-    chicken: 12.40,
-    rice: 4.30,
-    pasta: 3.20,
-    apples: 5.60,
-  }
-  const estimatedCost = items.reduce((total, item) => {
-    const price = itemPrices[item.toLowerCase()] ?? 5.00
-    return total + price
-  }, 0)
-
-  const handleAddToShoppingList = (item: string) => {
-    setItems((currentItems) => {
-      if (currentItems.includes(item)) {
-        return currentItems
-      }
-      return [...currentItems, item]
-    })
-  }
 
   const handleChooseOption = (option: string) => {
     setSelectedOption(option)
@@ -89,28 +67,25 @@ function App() {
           path="/dashboard"
           element={
             <Dashboard
-              items={items}
+              items={itemNames}
               estimatedCost={estimatedCost}
             />
           }
         />
         <Route
           path="/pantry"
-          element={<Pantry onAddToShoppingList={handleAddToShoppingList} />}
+          element={<Pantry onAddToShoppingList={addItem} />}
         />
         <Route
           path="/shopping-list"
-          element={
-            <ShoppingList
-              items={items}
-              setItems={setItems}
-            />
-          }
+          element={<ShoppingList />}
         />
+        <Route path="/shopping-list/:itemId" element={<ShoppingItemPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
         <Route
           path="/store-recommendations"
           element={
-            <StoreRecommendations items={items} onChooseOption={handleChooseOption} />
+            <StoreRecommendations items={itemNames} onChooseOption={handleChooseOption} />
           }
         />
         <Route
