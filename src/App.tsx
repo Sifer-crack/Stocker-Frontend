@@ -14,6 +14,11 @@ import Pantry from './pages/Pantry'
 import Account from './pages/Account'
 import { LandingPage } from './landing-page'
 
+export interface ShoppingItem {
+  name: string
+  productId?: string
+}
+
 function AppLayout({ estimatedCost }: { estimatedCost: number }) {
   return (
     <div className="app-layout">
@@ -27,7 +32,7 @@ function AppLayout({ estimatedCost }: { estimatedCost: number }) {
 
 function App() {
   const { accessToken, loading } = useAuth()
-  const [items, setItems] = useState<string[]>([])
+  const [items, setItems] = useState<ShoppingItem[]>([])
   const [selectedOption, setSelectedOption] = useState('')
 
   const itemPrices: Record<string, number> = {
@@ -43,16 +48,26 @@ function App() {
     apples: 5.60,
   }
   const estimatedCost = items.reduce((total, item) => {
-    const price = itemPrices[item.toLowerCase()] ?? 5.00
+    const price = itemPrices[item.name.toLowerCase()] ?? 5.00
     return total + price
   }, 0)
 
-  const handleAddToShoppingList = (item: string) => {
+  const handleAddToShoppingList = (
+    name: string,
+    productId?: string
+  ) => {
     setItems((currentItems) => {
-      if (currentItems.includes(item)) {
+      if (currentItems.some((item) => item.name === name)) {
         return currentItems
       }
-      return [...currentItems, item]
+
+      return [
+        ...currentItems,
+        {
+          name,
+          productId,
+        },
+      ]
     })
   }
 
@@ -96,7 +111,12 @@ function App() {
         />
         <Route
           path="/pantry"
-          element={<Pantry onAddToShoppingList={handleAddToShoppingList} />}
+          element={
+            <Pantry
+              onAddToShoppingList={handleAddToShoppingList}
+              shoppingListItems={items}
+            />
+          }
         />
         <Route
           path="/shopping-list"

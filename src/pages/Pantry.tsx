@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { fetchNutritionForFood } from '../lib/nutrition'
 import type { NutritionResult } from '../lib/nutrition'
 import './Pantry.css'
 import { useUser } from '../context/UserContext'
+import type { ShoppingItem } from '../App'
 
 interface PantryProps {
-  onAddToShoppingList: (item: string) => void
+  onAddToShoppingList: (name: string, productId?: string) => void
+  shoppingListItems: ShoppingItem[]
 }
 
 interface PantryApiItem {
@@ -26,6 +27,7 @@ interface ProductApiItem {
 
 interface PantryDisplayItem {
   id: string
+  productId: string
   name: string
   quantity: number
   unit: string
@@ -45,16 +47,29 @@ const getProductSize = (product: ProductApiItem): string => {
 
 function Pantry({
   onAddToShoppingList,
+  shoppingListItems,
 }: PantryProps) {
-  const navigate = useNavigate()
   const { user } = useUser()
-  const handleAddToShoppingList = (item: string) => {
-    onAddToShoppingList(item)
-    navigate('/shopping-list')
+  const handleAddToShoppingList = (
+    name: string,
+    productId: string
+  ) => {
+    const alreadyAdded = shoppingListItems.some(
+      (item) => item.name === name
+    )
+
+    if (alreadyAdded) {
+      setGenerationMessage(`${name} is already on your shopping list.`)
+      return
+    }
+
+    onAddToShoppingList(name, productId)
+    setGenerationMessage(`${name} added to your shopping list.`)
   }
   const [pantryItems, setPantryItems] = useState<PantryDisplayItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [generationMessage, setGenerationMessage] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
   const [newItemName, setNewItemName] = useState('')
   const [newItemQuantity, setNewItemQuantity] = useState(1)
@@ -68,6 +83,39 @@ function Pantry({
   const [nutritionErrorById, setNutritionErrorById] = useState<Record<string, string>>({})
   const [expandedNutritionId, setExpandedNutritionId] = useState<string | null>(null)
   const nutritionAbortRef = useRef<AbortController | null>(null)
+
+  const handleGenerateShoppingList = () => {
+    const lowStockItems = pantryItems.filter((item) => item.lowStock)
+
+    if (lowStockItems.length === 0) {
+      setGenerationMessage('There are no low-stock items to add.')
+      return
+    }
+
+    const newItems = lowStockItems.filter(
+      (item) =>
+        !shoppingListItems.some(
+          (shoppingItem) => shoppingItem.name === item.name
+        )
+    )
+
+    if (newItems.length === 0) {
+      setGenerationMessage(
+        'All low-stock items are already on your shopping list.'
+      )
+      return
+    }
+
+    newItems.forEach((item) => {
+      onAddToShoppingList(item.name, item.productId)
+    })
+
+    setGenerationMessage(
+      `${newItems.length} low-stock ${
+        newItems.length === 1 ? 'item' : 'items'
+      } added to your shopping list.`
+    )
+  }
 
   const loadPantry = async () => {
       try {
@@ -102,6 +150,7 @@ function Pantry({
 
           return {
             id: pantryItem.pantry_item_id,
+            productId: pantryItem.product_id,
             name: product.productName,
             quantity: pantryItem.quantity,
             unit: getProductSize(product),
@@ -359,6 +408,18 @@ const handleSaveEdit = async (id: string) => {
               {pantryItems.filter((item) => item.lowStock).length}
             </strong>
           </div>
+            <div className="pantry-generate-actions">
+              <button
+                type="button"
+                onClick={handleGenerateShoppingList}
+              >
+                Generate Shopping List
+              </button>
+
+              {generationMessage && (
+                <p>{generationMessage}</p>
+              )}
+            </div>
         </div>
 
         <section className="pantry-card">
@@ -393,7 +454,7 @@ const handleSaveEdit = async (id: string) => {
                 <button
                   type="button"
                   onClick={() =>
-                    handleAddToShoppingList(item.name)
+                    handleAddToShoppingList(item.name, item.productId)
                   }
                 >
                   Add to Shopping List
