@@ -179,6 +179,20 @@
   font-size: 12px;
 }
 
+
+.pantry-category {
+  margin-bottom: 24px;
+  padding: 22px 24px;
+}
+
+.pantry-category-heading {
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ddd;
+  font-size: 19px;
+  font-weight: 600;
+}
+
 @media (max-width: 800px) {
   .pantry-header,
   .pantry-content {
