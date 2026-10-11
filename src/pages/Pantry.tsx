@@ -62,6 +62,7 @@ function Pantry({
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editingQuantity, setEditingQuantity] = useState(1)
 
+  const[groupByCategory, setGroupByCategory] = useState(false)
   const[productResults, setProductResults] = useState<ProductApiItem[]>([])
   const[selectedProduct, setSelectedProduct] = useState<ProductApiItem | null>(null)
   const [nutritionById, setNutritionById] = useState<Record<string, NutritionResult>>({})
@@ -266,6 +267,13 @@ const groupedPantryItems = pantryItems.reduce<Record<string, PantryDisplayItem[]
 
   const sortedCategories = Object.keys(groupedPantryItems).sort((a, b) => a.localeCompare(b))
 
+  Object.values(groupedPantryItems).forEach((items) => {
+    items.sort ((a, b) => a.name.localeCompare(b.name))
+  })
+
+  const sortedPantryItems = [...pantryItems].sort((a, b) =>
+  a.name.localeCompare(b.name))
+
 const handleSaveEdit = async (id: string) => {
   if (editingQuantity < 1) {
     return
@@ -303,6 +311,12 @@ const handleSaveEdit = async (id: string) => {
         <div>
           <h1>My Pantry</h1>
           <p>Keep track of what you already have at home.</p>
+        </div>
+
+        <div className={"pantry-header-actions"}>
+          <button type="button" className="view-toggle-button" onClick={() => setGroupByCategory(!groupByCategory)}>
+            {groupByCategory ? 'Sort Alphabetically': 'Group by Category'}
+          </button>
         </div>
 
         <button
@@ -378,15 +392,12 @@ const handleSaveEdit = async (id: string) => {
         </div>
 
         <section className="pantry-card">
-          {sortedCategories.map((category) => (
+          {groupByCategory ? (sortedCategories.map((category) => (
               <div key={category} className="pantry-category">
                 <h2 className="pantry-category-heading">{category}</h2>
 
                 {groupedPantryItems[category].map((item) => (
-                    <div
-                        key={item.id}
-                        className="pantry-item"
-                    >
+                    <div key={item.id} className="pantry-item">
                       <div>
                         <h3>{item.name}</h3>
 
@@ -508,7 +519,132 @@ const handleSaveEdit = async (id: string) => {
                     </div>
                 ))}
               </div>
-          ))}
+              ))
+
+          ) : (
+              sortedPantryItems.map((item) => (
+                    <div key={item.id} className="pantry-item">
+                      <div>
+                        <h3>{item.name}</h3>
+
+                        {editingItemId === item.id ? (
+                            <input
+                                type="number"
+                                min="1"
+                                value={editingQuantity}
+                                onChange={(event) =>
+                                    setEditingQuantity(Number(event.target.value))
+                                }
+                            />
+                        ) : (
+                            <p>Quantity: {item.quantity}</p>
+                        )}
+
+                        {item.lowStock && (
+                            <span className="low-stock">
+                Running low
+              </span>
+                        )}
+                      </div>
+
+                      <div className="pantry-item-actions">
+                        <button
+                            type="button"
+                            onClick={() => handleAddToShoppingList(item.name)}
+                        >
+                          Add to Shopping List
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => handleShowNutrition(item)}
+                        >
+                          {expandedNutritionId === item.id
+                              ? 'Hide Nutrition'
+                              : 'Nutrition'}
+                        </button>
+
+                        {editingItemId === item.id ? (
+                            <button
+                                type="button"
+                                onClick={() => handleSaveEdit(item.id)}
+                            >
+                              Save
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => handleStartEdit(item)}
+                            >
+                              Edit
+                            </button>
+                        )}
+
+                        <button
+                            type="button"
+                            className="remove-pantry-button"
+                            onClick={() => handleRemovePantryItem(item.id)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+
+                      {expandedNutritionId === item.id && (
+                          <div className="nutrition-panel">
+                            {nutritionLoadingId === item.id && (
+                                <p>Loading nutrition…</p>
+                            )}
+
+                            {nutritionErrorById[item.id] &&
+                                nutritionLoadingId !== item.id && (
+                                    <p className="nutrition-error">
+                                      {nutritionErrorById[item.id]}
+                                    </p>
+                                )}
+
+                            {nutritionById[item.id] &&
+                                nutritionLoadingId !== item.id && (
+                                    <>
+                                      <p className="nutrition-match">
+                                        {nutritionById[item.id].food.foodname} — serving:{' '}
+                                        {nutritionById[item.id].servingAmount}{' '}
+                                        {nutritionById[item.id].food.serving_size_unit} (
+                                        {nutritionById[item.id].food.serving_or_measure_description})
+                                      </p>
+
+                                      <table className="nutrition-table">
+                                        <thead>
+                                        <tr>
+                                          <th>Nutrient</th>
+                                          <th>Per serving</th>
+                                          <th>%RDI</th>
+                                        </tr>
+                                        </thead>
+
+                                        <tbody>
+                                        {nutritionById[item.id].components.map(
+                                            (component) => (
+                                                <tr key={component.component_code}>
+                                                  <td>
+                                                    {component.component_displayname}
+                                                    <span className="nutrition-per100">
+                                  {' '}({component.unit_abbr})
+                                </span>
+                                                  </td>
+                                                  <td>{component.amount}</td>
+                                                  <td>{component.percent_RDI}%</td>
+                                                </tr>
+                                            )
+                                        )}
+                                        </tbody>
+                                      </table>
+                                    </>
+                                )}
+                          </div>
+                      )}
+                    </div>
+                  ))
+              )}
         </section>
       </div>
     </main>
