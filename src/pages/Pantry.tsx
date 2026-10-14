@@ -56,7 +56,7 @@ function Pantry({
   const [pantryItems, setPantryItems] = useState<PantryDisplayItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [showAddForm, setShowAddForm] = useState(false)
+
   const [newItemName, setNewItemName] = useState('')
   const [newItemQuantity, setNewItemQuantity] = useState(1)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
@@ -64,6 +64,24 @@ function Pantry({
 
   const[groupByCategory, setGroupByCategory] = useState(false)
   const[productResults, setProductResults] = useState<ProductApiItem[]>([])
+
+  const productSearchRef = useRef<HTMLDivElement>(null)
+
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (productSearchRef.current && !productSearchRef.current.contains(event.target as Node)) {
+        setProductResults([])
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+
+    return() => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  },[])
+
+
   const[selectedProduct, setSelectedProduct] = useState<ProductApiItem | null>(null)
   const [nutritionById, setNutritionById] = useState<Record<string, NutritionResult>>({})
   const [nutritionLoadingId, setNutritionLoadingId] = useState<string | null>(null)
@@ -186,7 +204,6 @@ function Pantry({
       setSelectedProduct(null)
       setProductResults([])
       setNewItemQuantity(1)
-      setShowAddForm(false)
     } catch (err) {
       console.error(err)
       setError('Unable to add pantry item')
@@ -314,66 +331,14 @@ const handleSaveEdit = async (id: string) => {
         </div>
 
         <div className={"pantry-header-actions"}>
-          <button type="button" className="view-toggle-button" onClick={() => setGroupByCategory(!groupByCategory)}>
-            {groupByCategory ? 'Sort Alphabetically': 'Group by Category'}
-          </button>
+
         </div>
 
-        <button
-          type="button"
-          className="add-pantry-button"
-          onClick={() => setShowAddForm(!showAddForm)}
-        >
-          {showAddForm ? 'Cancel' : '+ Add Pantry Item'}
+        <button type="button" className="view-toggle-button add-pantry-button" onClick={() => setGroupByCategory(!groupByCategory)}>
+          {groupByCategory ? 'Sort Alphabetically': 'Group by Category'}
         </button>
+
       </header>
-        {showAddForm && (
-          <div className="add-pantry-form">
-            <input
-                type="text"
-                placeholder={"Search products..."}
-                value={newItemName}
-                onChange={(event) => handleProductSearch(event.target.value)
-            }
-            />
-
-            {productResults.length > 0 && !selectedProduct && (
-                <div className="product-dropdown">
-                  {productResults.map((product) =>
-                  <button
-                      type="button"
-                      key={product.productId}
-                      className="product-dropdown-item"
-                      onClick={() => {
-                        setSelectedProduct(product)
-                        setNewItemName(`${product.productName} - ${getProductSize(product)}`
-                        )
-                        setProductResults([])
-                      }}
-                  >
-                    <span>{product.productName}</span>
-                    <span>{getProductSize(product)}</span>
-                  </button>
-                  )}
-                </div>
-            )}
-            <input
-              type="number"
-              min="1"
-              value={newItemQuantity}
-              onChange={(event) =>
-                setNewItemQuantity(Number(event.target.value))
-              }
-            />
-            <button
-              type="button"
-              onClick={handleAddPantryItem}
-            >
-              Add Item
-            </button>
-          </div>
-        )}
-
       <div className="pantry-content">
         {loading && <p>Loading pantry...</p>}
         {error && <p>{error}</p>}
@@ -389,6 +354,59 @@ const handleSaveEdit = async (id: string) => {
               {pantryItems.filter((item) => item.lowStock).length}
             </strong>
           </div>
+        </div>
+
+        <div className="add-pantry-container">
+          <div className="add-pantry-form">
+            <div className="product-search-container" ref={productSearchRef}>
+              <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={newItemName}
+                  onChange={(event) => handleProductSearch(event.target.value)}
+              />
+
+              {productResults.length > 0 && !selectedProduct && (
+                  <div className="product-dropdown">
+                    {productResults.map((product) => (
+                        <button
+                            type="button"
+                            key={product.productId}
+                            className="product-dropdown-item"
+                            onClick={() => {
+                              setSelectedProduct(product)
+                              setNewItemName(
+                                  `${product.productName} - ${getProductSize(product)}`
+                              )
+                              setProductResults([])
+                            }}
+                        >
+                          <span>{product.productName}</span>
+                          <span>{getProductSize(product)}</span>
+                        </button>
+                    ))}
+                  </div>
+              )}
+            </div>
+
+            <input
+                type="number"
+                min="1"
+                value={newItemQuantity}
+                onChange={(event) =>
+                    setNewItemQuantity(Number(event.target.value))
+                }
+            />
+          </div>
+
+          <button
+              type="button"
+              className="add-pantry-button"
+              onClick={handleAddPantryItem}
+              disabled={!selectedProduct || newItemQuantity < 1}
+          >
+            Add Pantry Item
+          </button>
         </div>
 
         <section className="pantry-card">

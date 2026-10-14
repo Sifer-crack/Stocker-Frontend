@@ -84,10 +84,85 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  height: 42px;
+}
+
+.view-toggle-button {
+  align-self: center;
+  flex-shrink: 0;
 }
 
 .add-pantry-button:hover {
   background: #157347;
+}
+
+.add-pantry-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 24px;
+}
+
+.add-pantry-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+
+.product-search-container input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.product-search-container {
+  position: relative;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.product-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.product-dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: #ffffff;
+  color: #173022;
+  text-align: left;
+  cursor: pointer;
+}
+
+.product-dropdown-item:hover {
+  background: #f7f8f5;
+}
+
+.add-pantry-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .pantry-item:last-child {
