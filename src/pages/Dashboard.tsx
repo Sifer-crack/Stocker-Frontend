@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
 import './Dashboard.css'
+import type { ShoppingItem } from '../App'
 
 interface DashboardProps {
-  items: string[]
+  items: ShoppingItem[]
   estimatedCost: number
 }
 
