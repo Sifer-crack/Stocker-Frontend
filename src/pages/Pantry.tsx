@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { fetchNutritionForFood } from '../lib/nutrition'
 import type { NutritionResult } from '../lib/nutrition'
 import './Pantry.css'
+import Loading from '../components/Loading'
 import { useUser } from '../context/UserContext'
 import type { ShoppingItem } from '../App'
 
@@ -394,7 +395,7 @@ const handleSaveEdit = async (id: string) => {
         )}
 
       <div className="pantry-content">
-        {loading && <p>Loading pantry...</p>}
+        {loading && <Loading message="Loading your pantry..." fullScreen={false} />}
         {error && <p>{error}</p>}
         <div className="pantry-summary">
           <div>

@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import ShoppingList from './pages/ShoppingList'
 import StoreRecommendations from './pages/StoreRecommendations'
 import Sidebar from './components/Sidebar'
+import Loading from './components/Loading'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { useAuth } from './context/AuthContext'
 import './App.css'
@@ -76,7 +77,7 @@ function App() {
   }
 
   if (loading) {
-    return <div>Loading...</div>
+    return <Loading message="Checking your session..." />
   }
 
   const isLoggedIn = accessToken !== null

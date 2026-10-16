@@ -133,23 +133,26 @@
   background: var(--accent-hover);
 }
 
-.remove-pantry-button {
-  background: transparent;
-  color: #b42318;
+.pantry-item button.remove-pantry-button {
+  background: #d92d20;
+  color: #ffffff;
   border: 1px solid #d92d20;
 }
 
-.remove-pantry-button:hover {
-  background: #fef3f2;
+.pantry-item button.remove-pantry-button:hover {
+  background: #b42318;
+  border-color: #b42318;
 }
 
-:root[data-theme='dark'] .remove-pantry-button {
-  color: var(--danger);
-  border-color: var(--danger);
+:root[data-theme='dark'] .pantry-item button.remove-pantry-button {
+  background: #f97066;
+  color: #1a0b0a;
+  border-color: #f97066;
 }
 
-:root[data-theme='dark'] .remove-pantry-button:hover {
-  background: rgba(249, 112, 102, 0.12);
+:root[data-theme='dark'] .pantry-item button.remove-pantry-button:hover {
+  background: #ffa19b;
+  border-color: #ffa19b;
 }
 
 .nutrition-panel {
