@@ -1,7 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import './Sidebar.css'
 import { useUser } from '../context/UserContext'
-import { useAuth } from '../context/AuthContext'
 
 interface SidebarProps {
   estimatedCost: number
@@ -21,7 +20,6 @@ function Sidebar({
   onMouseEnter,
 }: SidebarProps) {
   const { user } = useUser()
-  const { logout } = useAuth()
 
   const weeklyBudget = user?.groceryBudget ?? 0
   const remainingBudget = weeklyBudget - estimatedCost
@@ -35,7 +33,6 @@ function Sidebar({
     { label: 'Shopping List', path: '/shopping-list' },
     { label: 'Shopping Options', path: '/store-recommendations' },
     { label: 'Shopping Route', path: '/shopping-route' },
-    { label: 'Account', path: '/account' },
   ]
 
   const className = isPeek
@@ -81,25 +78,6 @@ function Sidebar({
           </div>
 
           <span>${remainingBudget.toFixed(2)} remaining</span>
-        </section>
-
-        <section className="user-card">
-          <div className="user-avatar">
-            {user?.firstName?.charAt(0) ?? 'U'}
-            {user?.lastName?.charAt(0) ?? ''}
-          </div>
-
-          <div>
-            <strong>
-              {[user?.firstName, user?.lastName]
-                .filter(Boolean)
-                .join(' ') || 'Stocker User'}
-            </strong>
-            <p>{user?.email ?? ''}</p>
-          </div>
-          <button type="button" onClick={logout}>
-            Log out
-          </button>
         </section>
       </div>
     </aside>

@@ -153,37 +153,6 @@
   font-weight: 600;
 }
 
-.user-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 8px;
-}
-
-.user-avatar {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: var(--surface-3);
-  color: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-}
-
-.user-card strong {
-  display: block;
-  color: var(--text-main);
-  margin-bottom: 4px;
-}
-
-.user-card p {
-  margin: 0;
-  color: var(--text-faint);
-  font-size: 14px;
-}
-
 @keyframes sidebar-slide-in {
   from {
     transform: translateX(-16px);

@@ -1,4 +1,5 @@
 import './AppTopBar.css'
+import UserMenu from './UserMenu'
 
 interface AppTopBarProps {
   sidebarOpen: boolean
@@ -21,6 +22,7 @@ function AppTopBar({ sidebarOpen, onToggleSidebar }: AppTopBarProps) {
           STOCKER
         </span>
       </button>
+      <UserMenu />
     </header>
   )
 }
