@@ -5,7 +5,8 @@
 }
 
 .pantry-header {
-  padding: 36px 44px 20px;
+  padding: 28px 44px;
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -14,15 +15,15 @@
 }
 
 .pantry-header h1 {
-  margin: 0 0 8px;
-  font-size: 36px;
-  font-weight: 700;
+  margin: 0 0 6px;
+  font-size: 34px;
+  color: var(--text-main);
 }
 
 .pantry-header p {
   margin: 0;
-  color: var(--text-muted);
-  font-size: 16px;
+  color: var(--text-muted-2);
+  font-size: 17px;
 }
 
 .pantry-content {
