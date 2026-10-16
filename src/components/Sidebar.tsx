@@ -5,9 +5,21 @@ import { useAuth } from '../context/AuthContext'
 
 interface SidebarProps {
   estimatedCost: number
+  isHidden?: boolean
+  isPeek?: boolean
+  isClosing?: boolean
+  onMouseLeave?: () => void
+  onMouseEnter?: () => void
 }
 
-function Sidebar({ estimatedCost }: SidebarProps) {
+function Sidebar({
+  estimatedCost,
+  isHidden = false,
+  isPeek = false,
+  isClosing = false,
+  onMouseLeave,
+  onMouseEnter,
+}: SidebarProps) {
   const { user } = useUser()
   const { logout } = useAuth()
 
@@ -26,13 +38,21 @@ function Sidebar({ estimatedCost }: SidebarProps) {
     { label: 'Account', path: '/account' },
   ]
 
-  return (
-    <aside className="sidebar">
-      <div className="sidebar-logo">
-        <div className="logo-icon"></div>
-        <span>STOCKER</span>
-      </div>
+  const className = isPeek
+    ? `sidebar sidebar--peek${isClosing ? ' sidebar--peek-closing' : ''}`
+    : isHidden
+      ? 'sidebar sidebar--hidden'
+      : 'sidebar'
+  const hidden = isHidden && !isPeek
 
+  return (
+    <aside
+      className={className}
+      onMouseLeave={onMouseLeave}
+      onMouseEnter={onMouseEnter}
+      aria-hidden={hidden || undefined}
+      inert={hidden || undefined}
+    >
       <nav className="sidebar-nav">
         {navItems.map((item) => (
           <NavLink
@@ -43,7 +63,7 @@ function Sidebar({ estimatedCost }: SidebarProps) {
             }
           >
             <span className="nav-dot"></span>
-            {item.label}
+            <span className="nav-label">{item.label}</span>
           </NavLink>
         ))}
       </nav>

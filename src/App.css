@@ -2,8 +2,15 @@
 .app-layout {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   background: var(--app-bg);
   color: var(--text-main);
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 
 .app-content {
