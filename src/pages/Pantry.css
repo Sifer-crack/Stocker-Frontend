@@ -1,12 +1,12 @@
 .pantry-page {
   min-height: 100vh;
-  background: #f7f8f5;
-  color: #173022;
+  background: var(--app-bg);
+  color: var(--text-main);
 }
 
 .pantry-header {
   padding: 36px 44px 20px;
-  border-bottom: 1px solid #e3e8e1;
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -21,7 +21,7 @@
 
 .pantry-header p {
   margin: 0;
-  color: #65756b;
+  color: var(--text-muted);
   font-size: 16px;
 }
 
@@ -38,8 +38,8 @@
 }
 
 .pantry-summary > div {
-  background: #ffffff;
-  border: 1px solid #e2e8e0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 22px 24px;
   display: flex;
@@ -48,18 +48,18 @@
 }
 
 .pantry-summary span {
-  color: #65756b;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
 .pantry-summary strong {
   font-size: 30px;
-  color: #173022;
+  color: var(--text-main);
 }
 
 .pantry-card {
-  background: #ffffff;
-  border: 1px solid #e2e8e0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 18px;
   overflow: hidden;
 }
@@ -71,13 +71,13 @@
   flex-wrap: wrap;
   gap: 20px;
   padding: 22px 24px;
-  border-bottom: 1px solid #edf0eb;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .add-pantry-button {
   border: none;
   border-radius: 10px;
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
   padding: 12px 18px;
   font-size: 14px;
@@ -86,7 +86,7 @@
 }
 
 .add-pantry-button:hover {
-  background: #157347;
+  background: var(--accent-hover);
 }
 
 .pantry-item:last-child {
@@ -100,7 +100,7 @@
 
 .pantry-item p {
   margin: 0 0 8px;
-  color: #65756b;
+  color: var(--text-muted);
 }
 
 .low-stock {
@@ -113,10 +113,15 @@
   font-weight: 600;
 }
 
+:root[data-theme='dark'] .low-stock {
+  background: #3a2f10;
+  color: #f5cf6b;
+}
+
 .pantry-item button {
   border: none;
   border-radius: 10px;
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
   padding: 11px 16px;
   font-size: 14px;
@@ -125,7 +130,7 @@
 }
 
 .pantry-item button:hover {
-  background: #157347;
+  background: var(--accent-hover);
 }
 
 .remove-pantry-button {
@@ -138,21 +143,30 @@
   background: #fef3f2;
 }
 
+:root[data-theme='dark'] .remove-pantry-button {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+:root[data-theme='dark'] .remove-pantry-button:hover {
+  background: rgba(249, 112, 102, 0.12);
+}
+
 .nutrition-panel {
   flex-basis: 100%;
-  background: #f7f8f5;
-  border: 1px solid #e2e8e0;
+  background: var(--app-bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px 18px;
 }
 
 .nutrition-error {
-  color: #b42318;
+  color: var(--danger);
 }
 
 .nutrition-match {
   margin: 0 0 12px;
-  color: #173022;
+  color: var(--text-main);
   font-size: 14px;
 }
 
@@ -166,16 +180,16 @@
 .nutrition-table td {
   text-align: left;
   padding: 8px 10px;
-  border-bottom: 1px solid #e3e8e1;
+  border-bottom: 1px solid var(--border);
 }
 
 .nutrition-table th {
-  color: #65756b;
+  color: var(--text-muted);
   font-weight: 600;
 }
 
 .nutrition-per100 {
-  color: #65756b;
+  color: var(--text-muted);
   font-size: 12px;
 }
 

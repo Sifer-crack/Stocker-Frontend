@@ -1,9 +1,11 @@
 import './Account.css'
 import { useUser } from '../context/UserContext'
+import { useTheme } from '../context/ThemeContext'
 import { useState } from 'react'
 
 function Account() {
   const { user, loading, error, updateBudget } = useUser()
+  const { isDark, toggleTheme } = useTheme()
   const [budgetInput, setBudgetInput] = useState('')
   const [budgetError, setBudgetError] = useState('')
   const [budgetMessage, setBudgetMessage] = useState('')
@@ -121,6 +123,27 @@ function Account() {
             {budgetMessage && (
               <p className="budget-message">{budgetMessage}</p>
             )}
+          </div>
+        </section>
+
+        <section className="account-card appearance-card">
+          <div>
+            <h2>Appearance</h2>
+            <p>Switch between light and dark mode. Your choice is saved in this browser.</p>
+          </div>
+          <div className="appearance-row">
+            <span className="appearance-state">{isDark ? 'Dark' : 'Light'}</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isDark}
+              aria-label="Dark mode"
+              className="theme-switch"
+              data-on={isDark}
+              onClick={toggleTheme}
+            >
+              <span className="theme-switch-thumb" aria-hidden="true" />
+            </button>
           </div>
         </section>
 
