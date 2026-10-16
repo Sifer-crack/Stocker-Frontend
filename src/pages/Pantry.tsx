@@ -75,6 +75,8 @@ function Pantry({
   const [newItemQuantity, setNewItemQuantity] = useState(1)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editingQuantity, setEditingQuantity] = useState(1)
+  const [searchInput, setSearchInput] = useState('')
+  const [searchField, setSearchField] = useState<'name' | 'quantity'>('name')
 
   const[productResults, setProductResults] = useState<ProductApiItem[]>([])
   const[selectedProduct, setSelectedProduct] = useState<ProductApiItem | null>(null)
@@ -330,6 +332,16 @@ const handleSaveEdit = async (id: string) => {
   }
 }
 
+  const normalizedSearch = searchInput.trim().toLowerCase()
+  const filteredItems =
+    normalizedSearch === ''
+      ? pantryItems
+      : pantryItems.filter((item) =>
+          searchField === 'name'
+            ? item.name.toLowerCase().includes(normalizedSearch)
+            : String(item.quantity).toLowerCase().includes(normalizedSearch)
+        )
+
   return (
     <main className="pantry-page">
       <header className="pantry-header">
@@ -422,8 +434,43 @@ const handleSaveEdit = async (id: string) => {
             </div>
         </div>
 
+        <div className="pantry-search">
+          <input
+            type="text"
+            placeholder={
+              searchField === 'name'
+                ? 'Search for an item (i.e Milk)'
+                : 'Search by quantity (i.e 2)'
+            }
+            aria-label={
+              searchField === 'name'
+                ? 'Search pantry items by name'
+                : 'Search pantry items by quantity'
+            }
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+          />
+          <select
+            aria-label="Choose what to search by"
+            value={searchField}
+            onChange={(event) =>
+              setSearchField(event.target.value as 'name' | 'quantity')
+            }
+          >
+            <option value="name">Name</option>
+            <option value="quantity">Quantity</option>
+          </select>
+        </div>
+
         <section className="pantry-card">
-          {pantryItems.map((item) => (
+          {filteredItems.length === 0 && !loading ? (
+            <p className="pantry-empty-search">
+              {normalizedSearch === ''
+                ? 'No pantry items yet.'
+                : `No pantry items match "${searchInput.trim()}".`}
+            </p>
+          ) : (
+            filteredItems.map((item) => (
             <div
               key={item.id}
               className="pantry-item"
@@ -528,7 +575,8 @@ const handleSaveEdit = async (id: string) => {
                 </div>
               )}
             </div>
-          ))}
+            ))
+          )}
         </section>
       </div>
     </main>

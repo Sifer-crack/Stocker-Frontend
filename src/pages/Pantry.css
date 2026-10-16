@@ -64,6 +64,48 @@
   overflow: hidden;
 }
 
+.pantry-search {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 16px;
+}
+
+.pantry-search input {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #e2e8e0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 15px;
+  color: #173022;
+}
+
+.pantry-search input::placeholder {
+  color: #65756b;
+}
+
+.pantry-search select {
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #e2e8e0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #173022;
+  cursor: pointer;
+}
+
+.pantry-empty-search {
+  margin: 0;
+  padding: 22px 24px;
+  color: #65756b;
+}
+
 .pantry-item {
   display: flex;
   align-items: center;
