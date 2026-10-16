@@ -1,13 +1,13 @@
 .options-page {
   min-height: 100vh;
-  background: #f7f8f5;
-  color: #173022;
+  background: var(--app-bg);
+  color: var(--text-main);
 }
 
 .options-header {
   padding: 28px 44px;
-  background: #ffffff;
-  border-bottom: 1px solid #dfe5dc;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -17,12 +17,12 @@
 .options-header h1 {
   margin: 0 0 6px;
   font-size: 34px;
-  color: #173022;
+  color: var(--text-main);
 }
 
 .options-header p {
   margin: 0;
-  color: #718075;
+  color: var(--text-muted-2);
   font-size: 17px;
 }
 
@@ -34,10 +34,10 @@
 .options-header-actions input {
   width: 280px;
   padding: 14px 16px;
-  border: 1px solid #d7dfd4;
+  border: 1px solid var(--input-border);
   border-radius: 14px;
-  background: #fbfcfa;
-  color: #173022;
+  background: var(--input-bg);
+  color: var(--text-main);
   font-size: 16px;
 }
 
@@ -45,7 +45,7 @@
   padding: 14px 22px;
   border: none;
   border-radius: 14px;
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
   font-size: 16px;
   font-weight: 700;
@@ -64,19 +64,19 @@
 
 .option-tabs button {
   padding: 14px 26px;
-  border: 1px solid #d4ddd1;
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
-  background: #ffffff;
-  color: #516456;
+  background: var(--surface);
+  color: var(--text-muted-2);
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .option-tabs button.active {
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
-  border-color: #198754;
+  border-color: var(--accent);
 }
 
 .options-grid {
@@ -87,8 +87,8 @@
 }
 
 .option-card {
-  background: #ffffff;
-  border: 1px solid #dfe5dc;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 28px;
 }
@@ -109,7 +109,7 @@
 }
 
 .option-card-top > strong {
-  color: #198754;
+  color: var(--accent);
 }
 
 .best-option .option-card-top > strong {
@@ -120,8 +120,8 @@
   display: inline-block;
   padding: 7px 12px;
   border-radius: 10px;
-  background: #edf2ec;
-  color: #198754;
+  background: var(--surface-3);
+  color: var(--accent);
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.6px;
@@ -135,7 +135,7 @@
 .option-card h2 {
   margin: 0 0 14px;
   font-size: 28px;
-  color: #173022;
+  color: var(--text-main);
 }
 
 .best-option h2 {
@@ -152,8 +152,8 @@
 .store-tags span {
   padding: 7px 11px;
   border-radius: 10px;
-  background: #edf2ec;
-  color: #173022;
+  background: var(--surface-3);
+  color: var(--text-main);
   font-size: 14px;
   font-weight: 700;
 }
@@ -177,11 +177,11 @@
 
 .price-row {
   margin-bottom: 14px;
-  color: #718075;
+  color: var(--text-muted-2);
 }
 
 .price-row strong {
-  color: #173022;
+  color: var(--text-main);
 }
 
 .best-option .price-row,
@@ -191,7 +191,7 @@
 
 .option-card hr {
   border: none;
-  border-top: 1px solid #dfe5dc;
+  border-top: 1px solid var(--border);
   margin: 18px 0;
 }
 
@@ -213,9 +213,9 @@
   width: 100%;
   padding: 16px;
   border-radius: 14px;
-  border: 1px solid #d4ddd1;
-  background: #ffffff;
-  color: #198754;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--accent);
   font-size: 17px;
   font-weight: 800;
   cursor: pointer;
@@ -226,8 +226,8 @@
 }
 
 .options-empty {
-  background: #ffffff;
-  border: 1px solid #dfe5dc;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 36px;
   text-align: center;
@@ -242,7 +242,7 @@
   padding: 14px 22px;
   border: none;
   border-radius: 14px;
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
   font-weight: 700;
   cursor: pointer;
@@ -256,7 +256,7 @@
 
 .store-item-group {
   padding: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 

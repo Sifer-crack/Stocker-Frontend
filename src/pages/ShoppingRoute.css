@@ -1,24 +1,24 @@
 .route-page {
   min-height: 100vh;
-  background: #f7f8f5;
-  color: #173022;
+  background: var(--app-bg);
+  color: var(--text-main);
 }
 
 .route-header {
   padding: 28px 44px;
-  background: #ffffff;
-  border-bottom: 1px solid #dfe5dc;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
 
 .route-header h1 {
   margin: 0 0 6px;
   font-size: 34px;
-  color: #173022;
+  color: var(--text-main);
 }
 
 .route-header p {
   margin: 0;
-  color: #718075;
+  color: var(--text-muted-2);
   font-size: 17px;
 }
 
@@ -32,8 +32,8 @@
 
 .route-main-card,
 .route-summary-card {
-  background: #ffffff;
-  border: 1px solid #dfe5dc;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 24px;
 }
 
@@ -52,7 +52,7 @@
 .route-label {
   display: block;
   margin-bottom: 8px;
-  color: #198754;
+  color: var(--accent);
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -61,14 +61,14 @@
 .route-card-heading h2 {
   margin: 0;
   font-size: 26px;
-  color: #173022;
+  color: var(--text-main);
 }
 
 .route-status {
   padding: 9px 14px;
   border-radius: 999px;
-  background: #e6f4eb;
-  color: #198754;
+  background: var(--surface-3);
+  color: var(--accent);
   font-size: 14px;
   font-weight: 700;
 }
@@ -83,7 +83,7 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -95,7 +95,7 @@
 .route-stop span {
   display: block;
   margin-bottom: 4px;
-  color: #879488;
+  color: var(--text-faint);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -104,18 +104,18 @@
 .route-stop h3 {
   margin: 0 0 5px;
   font-size: 20px;
-  color: #173022;
+  color: var(--text-main);
 }
 
 .route-stop p {
   margin: 0;
-  color: #718075;
+  color: var(--text-muted-2);
 }
 
 .route-line {
   width: 2px;
   height: 52px;
-  background: #cfe0d4;
+  background: var(--border-strong);
   margin-left: 20px;
 }
 
@@ -133,12 +133,12 @@
   justify-content: space-between;
   gap: 20px;
   padding: 14px 0;
-  border-bottom: 1px solid #e8ece6;
-  color: #718075;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-muted-2);
 }
 
 .route-summary-row strong {
-  color: #173022;
+  color: var(--text-main);
   text-align: right;
 }
 
@@ -148,7 +148,7 @@
   padding: 16px;
   border: none;
   border-radius: 14px;
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
   font-size: 16px;
   font-weight: 800;
@@ -157,9 +157,9 @@
 
 .route-summary-card .route-back-button {
   margin-top: 12px;
-  background: #ffffff;
-  color: #516456;
-  border: 1px solid #d4ddd1;
+  background: var(--surface);
+  color: var(--text-muted-2);
+  border: 1px solid var(--border-strong);
 }
 
 @media (max-width: 1100px) {
