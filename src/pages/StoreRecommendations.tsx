@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './StoreRecommendations.css'
+import type { ShoppingItem } from '../App'
 
 interface StoreRecommendationsProps {
-  items: string[]
+  items: ShoppingItem[]
   onChooseOption: (option: string) => void
 }
 
@@ -407,8 +408,8 @@ const inStoreRecommendation = multiStoreIsBest
                     {storeGroup.items.length > 0 ? (
                       <ul>
                         {storeGroup.items.map((item, index) => (
-                          <li key={`${storeGroup.store}-${item}-${index}`}>
-                            {item}
+                          <li key={`${storeGroup.store}-${item.name}-${index}`}>
+                            {item.name}
                           </li>
                         ))}
                       </ul>

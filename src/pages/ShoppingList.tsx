@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
 import './ShoppingList.css'
+import type { ShoppingItem } from '../App'
 
 interface ShoppingListProps {
-  items: string[]
-  setItems: React.Dispatch<React.SetStateAction<string[]>>
+  items: ShoppingItem[]
+  setItems: React.Dispatch<React.SetStateAction<ShoppingItem[]>>
 }
 
 function ShoppingList({
@@ -17,6 +18,7 @@ function ShoppingList({
   const weeklyBudget = user?.groceryBudget ?? 0
   const [itemName, setItemName] = useState('')
   const [completedItems, setCompletedItems] = useState<number[]>([])
+  const [completionMessage, setCompletionMessage] = useState('')
   const toggleCompleted = (index: number) => {
   if (completedItems.includes(index)) {
     setCompletedItems(
@@ -38,11 +40,71 @@ const removeItem = (index: number) => {
   )
 }
 
-  const addItem = () => {
+const completeShopping = async () => {
+  if (completedItems.length === 0) {
+    setCompletionMessage('Select the items you have purchased first.')
+    return
+  }
+
+  if (!user) {
+    setCompletionMessage('Unable to update pantry because no user is signed in.')
+    return
+  }
+
+  const completedSet = new Set(completedItems)
+
+  const purchasedItems = items.filter((_, index) =>
+    completedSet.has(index)
+  )
+
+  try {
+    for (const item of purchasedItems) {
+      if (!item.productId) {
+        continue
+      }
+
+      const response = await fetch(
+        `http://localhost:8087/pantry-items?userId=${user.id}&productId=${item.productId}&quantity=1`,
+        {
+          method: 'POST',
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`Could not update pantry for ${item.name}`)
+      }
+    }
+
+    setItems(
+      items.filter((_, index) => !completedSet.has(index))
+    )
+
+    const completedCount = purchasedItems.length
+    setCompletedItems([])
+
+    setCompletionMessage(
+      `${completedCount} purchased ${
+        completedCount === 1 ? 'item' : 'items'
+      } completed and pantry updated.`
+    )
+  } catch (error) {
+    console.error('Unable to complete shopping:', error)
+    setCompletionMessage(
+      'Unable to complete shopping. Your shopping list has not been changed.'
+    )
+  }
+}
+
+const addItem = () => {
   if (itemName.trim() === '') {
     return
   }
-  setItems([...items, itemName])
+  setItems([
+    ...items,
+    {
+      name: itemName,
+    },
+  ])
   setItemName('')
 }
 
@@ -59,8 +121,8 @@ const removeItem = (index: number) => {
     apples: 5.60,
   }
 
-  const getItemPrice = (item: string) => {
-    return itemPrices[item.toLowerCase()] ?? 5.00
+  const getItemPrice = (item: ShoppingItem) => {
+    return itemPrices[item.name.toLowerCase()] ?? 5.00
   }
 
   const estimatedCost = items.reduce(
@@ -110,13 +172,13 @@ const removeItem = (index: number) => {
                         completedItems.includes(index) ? 'completed' : ''
                       }`}
                       onClick={() => toggleCompleted(index)}
-                      aria-label={`Mark ${item} as ${
+                      aria-label={`Mark ${item.name} as ${
                         completedItems.includes(index) ? 'not completed' : 'completed'
                       }`}
                     />
 
                     <div>
-                      <strong>{item}</strong>
+                      <strong>{item.name}</strong>
                       <p>Qty 1</p>
                     </div>
                   </div>
@@ -169,6 +231,21 @@ const removeItem = (index: number) => {
               <strong>${remainingBudget.toFixed(2)}</strong>
             </div>
           </section>
+
+          <button
+            type="button"
+            className="complete-shopping-button"
+            onClick={completeShopping}
+            disabled={items.length === 0}
+          >
+            Complete Shopping
+          </button>
+
+          {completionMessage && (
+            <p className="completion-message">
+              {completionMessage}
+            </p>
+          )}
 
           <button
             type="button"

@@ -2,7 +2,8 @@
 .app-layout {
   min-height: 100vh;
   display: flex;
-  background: #f7f8f5;
+  background: var(--app-bg);
+  color: var(--text-main);
 }
 
 .app-content {
