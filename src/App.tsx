@@ -21,7 +21,7 @@ export interface ShoppingItem {
   productId?: string
 }
 
-function AppLayout({ estimatedCost }: { estimatedCost: number }) {
+function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [peekOpen, setPeekOpen] = useState(false)
   const [peekClosing, setPeekClosing] = useState(false)
@@ -89,13 +89,9 @@ function AppLayout({ estimatedCost }: { estimatedCost: number }) {
             onMouseLeave={clearTimers}
           />
         )}
-        <Sidebar
-          estimatedCost={estimatedCost}
-          isHidden={!sidebarOpen}
-        />
+        <Sidebar isHidden={!sidebarOpen} />
         {!sidebarOpen && peekOpen && (
           <Sidebar
-            estimatedCost={estimatedCost}
             isPeek
             isClosing={peekClosing}
             onMouseLeave={handlePeekMouseLeave}
@@ -176,7 +172,7 @@ function App() {
       <Route
         element={
           <ProtectedRoute>
-            <AppLayout estimatedCost={estimatedCost} />
+            <AppLayout />
           </ProtectedRoute>
         }
       >

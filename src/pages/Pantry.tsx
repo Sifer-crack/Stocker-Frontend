@@ -631,7 +631,8 @@ function Pantry({
         {loading && <Loading message="Loading your pantry..." fullScreen={false} />}
         {error && <p>{error}</p>}
 
-        <section className="pantry-card">
+        {!loading && (
+          <section className="pantry-card">
         <div className="pantry-toolbar">
           <div className="pantry-search">
             <input
@@ -946,6 +947,7 @@ function Pantry({
             ))
           )}
         </section>
+        )}
 
         {selectedItemIds.length > 0 && (
           <div className="pantry-bulk-bar">

@@ -1,10 +1,10 @@
 import { NavLink } from 'react-router-dom'
 import './Sidebar.css'
 import { useUser } from '../context/UserContext'
+import { useWeeklySpending } from '../hooks/useWeeklySpending'
 import ExportSpendingReportButton from './ExportSpendingReportButton'
 
 interface SidebarProps {
-  estimatedCost: number
   isHidden?: boolean
   isPeek?: boolean
   isClosing?: boolean
@@ -13,7 +13,6 @@ interface SidebarProps {
 }
 
 function Sidebar({
-  estimatedCost,
   isHidden = false,
   isPeek = false,
   isClosing = false,
@@ -21,12 +20,13 @@ function Sidebar({
   onMouseEnter,
 }: SidebarProps) {
   const { user } = useUser()
+  const { spent } = useWeeklySpending()
 
   const weeklyBudget = user?.groceryBudget ?? 0
-  const remainingBudget = weeklyBudget - estimatedCost
-  const budgetUsedPercentage =
+  const remainingBudget = weeklyBudget - spent
+  const budgetRemainingPercentage =
     weeklyBudget > 0
-      ? Math.min((estimatedCost / weeklyBudget) * 100, 100)
+      ? Math.min(Math.max((remainingBudget / weeklyBudget) * 100, 0), 100)
       : 0
   const navItems = [
     { label: 'Dashboard', path: '/dashboard' },
@@ -74,7 +74,7 @@ function Sidebar({
           <div className="budget-progress">
             <div
               className="budget-progress-fill"
-              style={{ width: `${budgetUsedPercentage}%` }}
+              style={{ width: `${budgetRemainingPercentage}%` }}
             ></div>
           </div>
 

@@ -78,6 +78,36 @@ export function filterReportByDateRange(
   return filtered
 }
 
+export function toDateInputValue(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+export function getCurrentWeekRange(
+  reference: Date = new Date(),
+): { start: Date; end: Date } {
+  const today = new Date(
+    reference.getFullYear(),
+    reference.getMonth(),
+    reference.getDate(),
+  )
+  const mondayOffset = (today.getDay() + 6) % 7
+  const start = new Date(today)
+  start.setDate(today.getDate() - mondayOffset)
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)
+  return { start, end }
+}
+
+export function sumReportTotal(report: SpendingReport): number {
+  return Object.values(report).reduce(
+    (sum, day) => sum + (day.total ?? 0),
+    0,
+  )
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
