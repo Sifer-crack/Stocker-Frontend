@@ -27,6 +27,57 @@ export function formatReportDateKey(date: Date): string {
   return `${day}_${month}_${year}`
 }
 
+export function parseReportDateKey(key: string): Date | null {
+  const match = /^(\d{2})_(\d{2})_(\d{4})$/.exec(key)
+  if (!match) {
+    return null
+  }
+  const day = Number(match[1])
+  const month = Number(match[2])
+  const year = Number(match[3])
+  return new Date(year, month - 1, day)
+}
+
+export function parseDateInput(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) {
+    return null
+  }
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  return new Date(year, month - 1, day)
+}
+
+export function filterReportByDateRange(
+  report: SpendingReport,
+  start: string,
+  end: string,
+): SpendingReport {
+  const startDate = start ? parseDateInput(start) : null
+  const endDate = end ? parseDateInput(end) : null
+
+  if (!startDate && !endDate) {
+    return report
+  }
+
+  const filtered: SpendingReport = {}
+  for (const [key, day] of Object.entries(report)) {
+    const date = parseReportDateKey(key)
+    if (!date) {
+      continue
+    }
+    if (startDate && date < startDate) {
+      continue
+    }
+    if (endDate && date > endDate) {
+      continue
+    }
+    filtered[key] = day
+  }
+  return filtered
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
