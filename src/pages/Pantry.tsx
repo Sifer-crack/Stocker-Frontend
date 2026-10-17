@@ -188,7 +188,6 @@ function Pantry({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [generationMessage, setGenerationMessage] = useState('')
-  const [showAddForm, setShowAddForm] = useState(false)
   const [newItemName, setNewItemName] = useState('')
   const [newItemQuantity, setNewItemQuantity] = useState(1)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
@@ -196,6 +195,17 @@ function Pantry({
   const [searchInput, setSearchInput] = useState('')
   const [searchField, setSearchField] = useState<'name' | 'quantity'>('name')
   const [groupByCategory, setGroupByCategory] = useState(false)
+
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const availableCategories = Array.from(new Set(pantryItems.map((item) => item.category?.trim() || "Uncategorised")))
+      .sort((a, b) => a.localeCompare(b));
+  const filteredPantryItems = pantryItems.filter((item) => {
+    if (selectedCategories.length === 0) {
+      return true;
+    }
+    const category = item.category?.trim() || "Uncategorised";
+    return selectedCategories.includes(category);
+  });
 
   const [productResults, setProductResults] = useState<ProductApiItem[]>([])
   const [selectedProduct, setSelectedProduct] = useState<ProductApiItem | null>(null)
@@ -383,7 +393,6 @@ function Pantry({
       setSelectedProduct(null)
       setProductResults([])
       setNewItemQuantity(1)
-      setShowAddForm(false)
     } catch (err) {
       console.error(err)
       setError('Unable to add pantry item')
@@ -482,15 +491,15 @@ function Pantry({
   }
 
   const normalizedSearch = searchInput.trim().toLowerCase()
-  const filteredItems =
-    normalizedSearch === ''
-      ? pantryItems
-      : pantryItems.filter((item) =>
-          searchField === 'name'
-            ? item.name.toLowerCase().includes(normalizedSearch)
-            : String(item.quantity).toLowerCase().includes(normalizedSearch)
-        )
+  // filter by category first then apply text / quantity search
+  const filteredItems = filteredPantryItems.filter((item) => {
+    if (normalizedSearch === '') {
+      return true
+    }
+    return searchField === 'name' ? item.name.toLowerCase().includes(normalizedSearch) : String(item.quantity).includes(normalizedSearch)
+  })
 
+  // group filtered items by category
   const groupedPantryItems = filteredItems.reduce<Record<string, PantryDisplayItem[]>>((groups, item) => {
     const category = item.category?.trim() || 'Uncategorised'
 
@@ -503,6 +512,7 @@ function Pantry({
     return groups
   }, {})
 
+  // sort categories and items alphabetically
   const sortedCategories = Object.keys(groupedPantryItems).sort((a, b) => a.localeCompare(b))
 
   Object.values(groupedPantryItems).forEach((items) => {
@@ -524,14 +534,6 @@ function Pantry({
         <div className="pantry-header-actions">
           <button
             type="button"
-            className="add-pantry-button"
-            onClick={() => setShowAddForm(!showAddForm)}
-          >
-            {showAddForm ? 'Cancel' : '+ Add Pantry Item'}
-          </button>
-
-          <button
-            type="button"
             className="view-toggle-button"
             onClick={() => setGroupByCategory(!groupByCategory)}
           >
@@ -540,18 +542,17 @@ function Pantry({
         </div>
       </header>
 
-      {showAddForm && (
-        <div className="add-pantry-container">
-          <div className="add-pantry-form">
-            <div className="product-search-container" ref={productSearchRef}>
-              <input
+      <div className="add-pantry-container">
+        <div className="add-pantry-form">
+          <div className="product-search-container" ref={productSearchRef}>
+            <input
                 type="text"
-                placeholder="Search products..."
+                placeholder="Find a product to add to pantry..."
                 value={newItemName}
                 onChange={(event) => handleProductSearch(event.target.value)}
-              />
+            />
 
-              {productResults.length > 0 && !selectedProduct && (
+            {productResults.length > 0 && !selectedProduct && (
                 <div className="product-dropdown">
                   {productResults.map((product) => (
                     <button
@@ -593,7 +594,6 @@ function Pantry({
             Add Pantry Item
           </button>
         </div>
-      )}
 
       <div className="pantry-content">
         {loading && <Loading message="Loading your pantry..." fullScreen={false} />}
@@ -653,12 +653,46 @@ function Pantry({
           </select>
         </div>
 
+        <div className="pantry-category-filters">
+          <span className="pantry-category-filter-label">
+            Filter by category:
+          </span>
+
+          <div className="pantry-category-filter-options">
+            {availableCategories.map((category) => (
+                <button key={category}
+                type="button"
+                className={`pantry-filter-button ${
+                  selectedCategories.includes(category) ? 'active' : ''
+                }`}
+                aria-pressed={selectedCategories.includes(category)}
+                onClick={() => {
+                  setSelectedCategories((previous) =>
+                  previous.includes(category) ? previous.filter((selected) => selected !== category)
+                  : [...previous, category])
+                }}>
+                  {category}
+                </button>
+            ))}
+          </div>
+
+          {selectedCategories.length > 0 && (
+              <button type ="button"
+              className="pantry-clear-filters"
+              onClick={() => setSelectedCategories([])}>
+                Clear filters
+              </button>
+          )}
+        </div>
+
         <section className="pantry-card">
           {filteredItems.length === 0 && !loading ? (
             <p className="pantry-empty-search">
-              {normalizedSearch === ''
+              {pantryItems.length === 0
                 ? 'No pantry items yet.'
-                : `No pantry items match "${searchInput.trim()}".`}
+                  : selectedCategories.length > 0 || normalizedSearch !== ''
+                  ? 'No pantry items match your current filters.'
+                      : 'No pantry items to display.'}
             </p>
           ) : groupByCategory ? (
             sortedCategories.map((category) => (
