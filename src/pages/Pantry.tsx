@@ -195,6 +195,7 @@ function Pantry({
   const [searchInput, setSearchInput] = useState('')
   const [searchField, setSearchField] = useState<'name' | 'quantity'>('name')
   const [groupByCategory, setGroupByCategory] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const availableCategories = Array.from(new Set(pantryItems.map((item) => item.category?.trim() || "Uncategorised")))
@@ -534,11 +535,15 @@ function Pantry({
         <div className="pantry-header-actions">
           <button
             type="button"
-            className="view-toggle-button"
-            onClick={() => setGroupByCategory(!groupByCategory)}
+            className="pantry-generate-button"
+            onClick={handleGenerateShoppingList}
           >
-            {groupByCategory ? 'Sort Alphabetically' : 'Group by Category'}
+            Generate Shopping List
           </button>
+
+          {generationMessage && (
+            <p>{generationMessage}</p>
+          )}
         </div>
       </header>
 
@@ -610,80 +615,134 @@ function Pantry({
               {pantryItems.filter((item) => item.lowStock).length}
             </strong>
           </div>
+        </div>
 
-          <div className="pantry-generate-actions">
+        <div className="pantry-toolbar">
+          <div className="pantry-search">
+            <input
+              type="text"
+              placeholder={
+                searchField === 'name'
+                  ? 'Search for an item (i.e Milk)'
+                  : 'Search by quantity (i.e 2)'
+              }
+              aria-label={
+                searchField === 'name'
+                  ? 'Search pantry items by name'
+                  : 'Search pantry items by quantity'
+              }
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+            />
+
             <button
               type="button"
-              onClick={handleGenerateShoppingList}
+              className="apply-filters-button"
+              onClick={() => setFiltersOpen(true)}
             >
-              Generate Shopping List
+              Apply Filters
+              {selectedCategories.length > 0 && (
+                <span className="apply-filters-count">
+                  {selectedCategories.length}
+                </span>
+              )}
             </button>
-
-            {generationMessage && (
-              <p>{generationMessage}</p>
-            )}
           </div>
-        </div>
 
-        <div className="pantry-search">
-          <input
-            type="text"
-            placeholder={
-              searchField === 'name'
-                ? 'Search for an item (i.e Milk)'
-                : 'Search by quantity (i.e 2)'
-            }
-            aria-label={
-              searchField === 'name'
-                ? 'Search pantry items by name'
-                : 'Search pantry items by quantity'
-            }
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-          />
-          <select
-            aria-label="Choose what to search by"
-            value={searchField}
-            onChange={(event) =>
-              setSearchField(event.target.value as 'name' | 'quantity')
-            }
+          <button
+            type="button"
+            className="view-toggle-button"
+            onClick={() => setGroupByCategory(!groupByCategory)}
           >
-            <option value="name">Name</option>
-            <option value="quantity">Quantity</option>
-          </select>
+            {groupByCategory ? 'Sort Alphabetically' : 'Group by Category'}
+          </button>
         </div>
 
-        <div className="pantry-category-filters">
-          <span className="pantry-category-filter-label">
-            Filter by category:
-          </span>
-
-          <div className="pantry-category-filter-options">
-            {availableCategories.map((category) => (
-                <button key={category}
-                type="button"
-                className={`pantry-filter-button ${
-                  selectedCategories.includes(category) ? 'active' : ''
-                }`}
-                aria-pressed={selectedCategories.includes(category)}
-                onClick={() => {
-                  setSelectedCategories((previous) =>
-                  previous.includes(category) ? previous.filter((selected) => selected !== category)
-                  : [...previous, category])
-                }}>
-                  {category}
+        {filtersOpen && (
+          <div
+            className="pantry-filter-overlay"
+            onClick={() => setFiltersOpen(false)}
+          >
+            <div
+              className="pantry-filter-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Filter pantry items"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="pantry-filter-modal-header">
+                <h2>Filters</h2>
+                <button
+                  type="button"
+                  className="pantry-filter-close"
+                  aria-label="Close filters"
+                  onClick={() => setFiltersOpen(false)}
+                >
+                  ×
                 </button>
-            ))}
-          </div>
+              </div>
 
-          {selectedCategories.length > 0 && (
-              <button type ="button"
-              className="pantry-clear-filters"
-              onClick={() => setSelectedCategories([])}>
-                Clear filters
-              </button>
-          )}
-        </div>
+              <div className="pantry-filter-modal-field">
+                <label htmlFor="pantry-search-field">Search by</label>
+                <select
+                  id="pantry-search-field"
+                  value={searchField}
+                  onChange={(event) =>
+                    setSearchField(event.target.value as 'name' | 'quantity')
+                  }
+                >
+                  <option value="name">Name</option>
+                  <option value="quantity">Quantity</option>
+                </select>
+              </div>
+
+              <div className="pantry-filter-modal-field">
+                <span className="pantry-filter-modal-label">Filter by</span>
+                <div className="pantry-category-filter-options">
+                  {availableCategories.map((category) => (
+                    <button
+                      key={category}
+                      type="button"
+                      className={`pantry-filter-button ${
+                        selectedCategories.includes(category) ? 'active' : ''
+                      }`}
+                      aria-pressed={selectedCategories.includes(category)}
+                      onClick={() => {
+                        setSelectedCategories((previous) =>
+                          previous.includes(category)
+                            ? previous.filter((selected) => selected !== category)
+                            : [...previous, category]
+                        )
+                      }}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pantry-filter-modal-footer">
+                {selectedCategories.length > 0 && (
+                  <button
+                    type="button"
+                    className="pantry-clear-filters"
+                    onClick={() => setSelectedCategories([])}
+                  >
+                    Clear filters
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="pantry-filter-done"
+                  onClick={() => setFiltersOpen(false)}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <section className="pantry-card">
           {filteredItems.length === 0 && !loading ? (
