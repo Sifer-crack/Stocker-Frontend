@@ -60,6 +60,7 @@ function PantryItemRow({
   nutritionById,
   onStartEdit,
   onSaveEdit,
+  onCancelEdit,
   onShowNutrition,
 }: {
   item: PantryDisplayItem
@@ -74,6 +75,7 @@ function PantryItemRow({
   nutritionById: Record<string, NutritionResult>
   onStartEdit: (item: PantryDisplayItem) => void
   onSaveEdit: (id: string) => void
+  onCancelEdit: () => void
   onShowNutrition: (item: PantryDisplayItem) => void
 }) {
   return (
@@ -118,12 +120,21 @@ function PantryItemRow({
           {expandedNutritionId === item.id ? 'Hide Nutrition' : 'Nutrition'}
         </button>
         {editingItemId === item.id ? (
-          <button
-            type="button"
-            onClick={() => onSaveEdit(item.id)}
-          >
-            Save
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => onSaveEdit(item.id)}
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              className="cancel-edit-button"
+              onClick={onCancelEdit}
+            >
+              Cancel
+            </button>
+          </>
         ) : (
           <button
             type="button"
@@ -230,6 +241,24 @@ function Pantry({
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
+
+  useEffect(() => {
+    if (editingItemId === null) {
+      return
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setEditingItemId(null)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [editingItemId])
 
   const toggleItemSelection = (id: string) => {
     setSelectedItemIds((previous) =>
@@ -457,6 +486,10 @@ function Pantry({
     setEditingQuantity(item.quantity)
   }
 
+  const handleCancelEdit = () => {
+    setEditingItemId(null)
+  }
+
   const handleShowNutrition = async (item: PantryDisplayItem) => {
     if (expandedNutritionId === item.id) {
       setExpandedNutritionId(null)
@@ -598,7 +631,8 @@ function Pantry({
         {loading && <Loading message="Loading your pantry..." fullScreen={false} />}
         {error && <p>{error}</p>}
 
-        <section className="pantry-card">
+        {!loading && (
+          <section className="pantry-card">
         <div className="pantry-toolbar">
           <div className="pantry-search">
             <input
@@ -885,6 +919,7 @@ function Pantry({
                     nutritionById={nutritionById}
                     onStartEdit={handleStartEdit}
                     onSaveEdit={handleSaveEdit}
+                    onCancelEdit={handleCancelEdit}
                     onShowNutrition={handleShowNutrition}
                   />
                 ))}
@@ -906,11 +941,13 @@ function Pantry({
                 nutritionById={nutritionById}
                 onStartEdit={handleStartEdit}
                 onSaveEdit={handleSaveEdit}
+                onCancelEdit={handleCancelEdit}
                 onShowNutrition={handleShowNutrition}
               />
             ))
           )}
         </section>
+        )}
 
         {selectedItemIds.length > 0 && (
           <div className="pantry-bulk-bar">

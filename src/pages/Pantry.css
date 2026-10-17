@@ -178,7 +178,7 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(11, 31, 20, 0.45);
+  background: rgba(11, 31, 20, 0.7);
 }
 
 .pantry-filter-modal {
@@ -620,6 +620,15 @@
 }
 
 .pantry-item button.nutrition-button:hover {
+  background: var(--grey-hover);
+}
+
+.pantry-item button.cancel-edit-button {
+  background: var(--grey);
+  color: var(--grey-text);
+}
+
+.pantry-item button.cancel-edit-button:hover {
   background: var(--grey-hover);
 }
 
