@@ -84,12 +84,7 @@ input {
   font: inherit;
 }
 
-/* Keep public pages pinned to the light theme even when app dark mode is on. */
-:root[data-theme='dark'] .login-page {
-  background: #f7f8f5;
-  color: #173022;
-}
-
+/* Keep the marketing landing page pinned to the light theme even in dark mode. */
 :root[data-theme='dark'] .landing-page {
   background: #ffffff;
   color: #173022;
