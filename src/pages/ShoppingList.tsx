@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
+import { useAuth } from '../context/AuthContext'
+import {
+  fetchSpendingReport,
+  formatReportDateKey,
+  mergePurchaseIntoReport,
+  saveSpendingReport,
+} from '../lib/spendingReport'
 import './ShoppingList.css'
 import type { ShoppingItem } from '../App'
 
@@ -15,6 +22,7 @@ function ShoppingList({
 }: ShoppingListProps) {
   const navigate = useNavigate()
   const { user } = useUser()
+  const { accessToken } = useAuth()
   const weeklyBudget = user?.groceryBudget ?? 0
   const [itemName, setItemName] = useState('')
   const [completedItems, setCompletedItems] = useState<number[]>([])
@@ -75,6 +83,28 @@ const completeShopping = async () => {
       }
     }
 
+    let reportSaved = true
+    try {
+      const reportItems = purchasedItems.map((item) => ({
+        name: item.name,
+        quantity: 1,
+        price: getItemPrice(item),
+      }))
+      const total = reportItems.reduce((sum, item) => sum + item.price, 0)
+
+      const latestReport = await fetchSpendingReport(accessToken)
+      const updatedReport = mergePurchaseIntoReport(
+        latestReport,
+        formatReportDateKey(new Date()),
+        reportItems,
+        total
+      )
+      await saveSpendingReport(accessToken, updatedReport)
+    } catch (reportError) {
+      console.error('Unable to save spending report:', reportError)
+      reportSaved = false
+    }
+
     setItems(
       items.filter((_, index) => !completedSet.has(index))
     )
@@ -85,7 +115,9 @@ const completeShopping = async () => {
     setCompletionMessage(
       `${completedCount} purchased ${
         completedCount === 1 ? 'item' : 'items'
-      } completed and pantry updated.`
+      } completed and pantry updated.${
+        reportSaved ? '' : ' Spending report could not be saved.'
+      }`
     )
   } catch (error) {
     console.error('Unable to complete shopping:', error)

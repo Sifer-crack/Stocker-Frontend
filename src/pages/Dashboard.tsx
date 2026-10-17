@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
+import ExportSpendingReportButton from '../components/ExportSpendingReportButton'
 import './Dashboard.css'
 import type { ShoppingItem } from '../App'
 
@@ -89,6 +90,7 @@ function Dashboard({
           <div>
             <p>Weekly Grocery Budget</p>
             <h2>${weeklyBudget.toFixed(2)}</h2>
+            <ExportSpendingReportButton />
           </div>
 
           <div className="dashboard-budget-progress">

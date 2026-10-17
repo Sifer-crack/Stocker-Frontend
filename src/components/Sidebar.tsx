@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import './Sidebar.css'
 import { useUser } from '../context/UserContext'
+import ExportSpendingReportButton from './ExportSpendingReportButton'
 
 interface SidebarProps {
   estimatedCost: number
@@ -78,6 +79,8 @@ function Sidebar({
           </div>
 
           <span>${remainingBudget.toFixed(2)} remaining</span>
+
+          <ExportSpendingReportButton />
         </section>
       </div>
     </aside>

@@ -83,6 +83,10 @@
   font-size: 38px;
 }
 
+.dashboard-budget .export-report {
+  margin-top: 16px;
+}
+
 .dashboard-budget-progress {
   flex: 1;
   max-width: 700px;

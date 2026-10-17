@@ -156,6 +156,10 @@
   font-weight: 600;
 }
 
+.budget-card .export-report {
+  margin-top: 14px;
+}
+
 @keyframes sidebar-slide-in {
   from {
     transform: translateX(-16px);
