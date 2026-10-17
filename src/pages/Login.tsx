@@ -72,6 +72,10 @@ function Login() {
           </Link>
         </p>
       </section>
+
+      <Link to="/" className="login-back">
+        ← Back to Home
+      </Link>
     </main>
   )
 }
