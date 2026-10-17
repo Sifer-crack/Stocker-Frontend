@@ -25,6 +25,9 @@
   --accent: #198754;
   --accent-hover: #157347;
   --danger: #b42318;
+  --grey: #e5e7eb;
+  --grey-hover: #d1d5db;
+  --grey-text: #374151;
 }
 
 :root[data-theme='dark'] {
@@ -53,6 +56,9 @@
   --accent: #2fa36b;
   --accent-hover: #3cb67e;
   --danger: #f97066;
+  --grey: #374151;
+  --grey-hover: #4b5563;
+  --grey-text: #e5e7eb;
 }
 
 * {

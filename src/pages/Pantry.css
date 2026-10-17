@@ -91,7 +91,8 @@
 
 .pantry-content {
   padding: 32px 44px;
-  max-width: 1100px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .pantry-card {
@@ -107,7 +108,8 @@
   gap: 16px;
   width: 100%;
   box-sizing: border-box;
-  margin-bottom: 24px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .pantry-search {
@@ -141,8 +143,8 @@
   gap: 6px;
   border: none;
   border-radius: 9px;
-  background: var(--accent);
-  color: #ffffff;
+  background: var(--grey);
+  color: var(--grey-text);
   padding: 8px 12px;
   font-size: 13px;
   font-weight: 600;
@@ -151,7 +153,7 @@
 }
 
 .apply-filters-button:hover {
-  background: var(--accent-hover);
+  background: var(--grey-hover);
 }
 
 .apply-filters-count {
@@ -162,8 +164,8 @@
   height: 18px;
   padding: 0 5px;
   border-radius: 9px;
-  background: #ffffff;
-  color: var(--accent);
+  background: var(--surface);
+  color: var(--grey-text);
   font-size: 11px;
   font-weight: 700;
 }
@@ -315,6 +317,124 @@
   text-transform: capitalize;
 }
 
+.pantry-item--selected {
+  background: var(--surface-3);
+}
+
+.pantry-item-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pantry-item button.pantry-select-circle {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid var(--grey-hover);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.pantry-item button.pantry-select-circle:hover {
+  border-color: var(--accent);
+}
+
+.pantry-item button.pantry-select-circle--active {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.pantry-item button.pantry-select-circle--active:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.pantry-bulk-bar {
+  position: fixed;
+  right: 32px;
+  bottom: 32px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(11, 31, 20, 0.18);
+}
+
+.pantry-bulk-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.pantry-bulk-add {
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #ffffff;
+  padding: 11px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pantry-bulk-add:hover {
+  background: var(--accent-hover);
+}
+
+.pantry-bulk-delete {
+  border: 1px solid #d92d20;
+  border-radius: 10px;
+  background: transparent;
+  color: #d92d20;
+  padding: 11px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pantry-bulk-delete:hover {
+  background: #d92d20;
+  color: #ffffff;
+}
+
+.pantry-confirm-modal {
+  max-width: 400px;
+}
+
+.pantry-confirm-text {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
+.pantry-confirm-delete {
+  border: none;
+  border-radius: 10px;
+  background: #d92d20;
+  color: #ffffff;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pantry-confirm-delete:hover {
+  background: #b42318;
+}
+
 .add-pantry-button {
   border: none;
   border-radius: 10px;
@@ -331,21 +451,22 @@
 
 .view-toggle-button {
   flex-shrink: 0;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--grey);
   border-radius: 10px;
-  color: #ffffff;
+  color: var(--grey-text);
   padding: 12px 16px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   height: 46px;
-  background: var(--accent);
+  background: var(--grey);
   transition: background 0.2s, border-color 0.2s;
 }
 
 .view-toggle-button:hover {
-  background: var(--accent-hover);
+  background: var(--grey-hover);
+  border-color: var(--grey-hover);
 }
 
 .add-pantry-button:hover {
@@ -493,26 +614,13 @@
   background: var(--accent-hover);
 }
 
-.pantry-item button.remove-pantry-button {
-  background: #d92d20;
-  color: #ffffff;
-  border: 1px solid #d92d20;
+.pantry-item button.nutrition-button {
+  background: var(--grey);
+  color: var(--grey-text);
 }
 
-.pantry-item button.remove-pantry-button:hover {
-  background: #b42318;
-  border-color: #b42318;
-}
-
-:root[data-theme='dark'] .pantry-item button.remove-pantry-button {
-  background: #f97066;
-  color: #1a0b0a;
-  border-color: #f97066;
-}
-
-:root[data-theme='dark'] .pantry-item button.remove-pantry-button:hover {
-  background: #ffa19b;
-  border-color: #ffa19b;
+.pantry-item button.nutrition-button:hover {
+  background: var(--grey-hover);
 }
 
 .nutrition-panel {
@@ -590,6 +698,13 @@
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .pantry-bulk-bar {
+    left: 24px;
+    right: 24px;
+    bottom: 24px;
+    justify-content: space-between;
+  }
 }
 
 .pantry-category-filter-options {
@@ -600,10 +715,10 @@
 
 .pantry-filter-button {
   padding: 8px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--grey);
   border-radius: 10px;
-  background: var(--app-bg);
-  color: var(--text-main);
+  background: var(--grey);
+  color: var(--grey-text);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -611,13 +726,14 @@
 }
 
 .pantry-filter-button:hover {
-  border-color: var(--accent);
+  border-color: var(--grey-hover);
+  background: var(--grey-hover);
 }
 
 .pantry-filter-button.active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: #ffffff;
 }
 .pantry-clear-filters {
   padding: 8px 12px;

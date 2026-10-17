@@ -49,6 +49,8 @@ const getProductSize = (product: ProductApiItem): string => {
 
 function PantryItemRow({
   item,
+  isSelected,
+  onToggleSelect,
   editingItemId,
   editingQuantity,
   setEditingQuantity,
@@ -56,13 +58,13 @@ function PantryItemRow({
   nutritionLoadingId,
   nutritionErrorById,
   nutritionById,
-  onAddToShoppingList,
   onStartEdit,
   onSaveEdit,
-  onRemove,
   onShowNutrition,
 }: {
   item: PantryDisplayItem
+  isSelected: boolean
+  onToggleSelect: () => void
   editingItemId: string | null
   editingQuantity: number
   setEditingQuantity: (quantity: number) => void
@@ -70,15 +72,21 @@ function PantryItemRow({
   nutritionLoadingId: string | null
   nutritionErrorById: Record<string, string>
   nutritionById: Record<string, NutritionResult>
-  onAddToShoppingList: (name: string, productId: string) => void
   onStartEdit: (item: PantryDisplayItem) => void
   onSaveEdit: (id: string) => void
-  onRemove: (id: string) => void
   onShowNutrition: (item: PantryDisplayItem) => void
 }) {
   return (
-    <div key={item.id} className="pantry-item">
-      <div>
+    <div key={item.id} className={`pantry-item${isSelected ? ' pantry-item--selected' : ''}`}>
+      <div className="pantry-item-main">
+        <button
+          type="button"
+          className={`pantry-select-circle${isSelected ? ' pantry-select-circle--active' : ''}`}
+          aria-label={isSelected ? `Deselect ${item.name}` : `Select ${item.name}`}
+          aria-pressed={isSelected}
+          onClick={onToggleSelect}
+        />
+        <div>
         <h3>{item.name}</h3>
         {editingItemId === item.id ? (
           <input
@@ -99,16 +107,12 @@ function PantryItemRow({
           </span>
         )}
       </div>
+      </div>
 
       <div className="pantry-item-actions">
         <button
           type="button"
-          onClick={() => onAddToShoppingList(item.name, item.productId)}
-        >
-          Add to Shopping List
-        </button>
-        <button
-          type="button"
+          className="nutrition-button"
           onClick={() => onShowNutrition(item)}
         >
           {expandedNutritionId === item.id ? 'Hide Nutrition' : 'Nutrition'}
@@ -128,13 +132,6 @@ function PantryItemRow({
             Edit
           </button>
         )}
-        <button
-          type="button"
-          className="remove-pantry-button"
-          onClick={() => onRemove(item.id)}
-        >
-          Remove
-        </button>
       </div>
       {expandedNutritionId === item.id && (
         <div className="nutrition-panel">
@@ -197,6 +194,8 @@ function Pantry({
   const [groupByCategory, setGroupByCategory] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [addItemOpen, setAddItemOpen] = useState(false)
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([])
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const [productCategoryFilters, setProductCategoryFilters] = useState<string[]>([])
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -232,21 +231,43 @@ function Pantry({
     }
   }, [])
 
-  const handleAddToShoppingList = (
-    name: string,
-    productId: string
-  ) => {
-    const alreadyAdded = shoppingListItems.some(
-      (item) => item.name === name
+  const toggleItemSelection = (id: string) => {
+    setSelectedItemIds((previous) =>
+      previous.includes(id)
+        ? previous.filter((selected) => selected !== id)
+        : [...previous, id]
+    )
+  }
+
+  const clearSelection = () => {
+    setSelectedItemIds([])
+  }
+
+  const handleBulkAddToShoppingList = () => {
+    const selectedItems = pantryItems.filter((item) =>
+      selectedItemIds.includes(item.id)
     )
 
-    if (alreadyAdded) {
-      setGenerationMessage(`${name} is already on your shopping list.`)
-      return
-    }
+    const newItems = selectedItems.filter(
+      (item) =>
+        !shoppingListItems.some(
+          (shoppingItem) => shoppingItem.name === item.name
+        )
+    )
 
-    onAddToShoppingList(name, productId)
-    setGenerationMessage(`${name} added to your shopping list.`)
+    newItems.forEach((item) => {
+      onAddToShoppingList(item.name, item.productId)
+    })
+
+    setGenerationMessage(
+      newItems.length === 0
+        ? 'Selected items are already on your shopping list.'
+        : `${newItems.length} ${
+            newItems.length === 1 ? 'item' : 'items'
+          } added to your shopping list.`
+    )
+
+    clearSelection()
   }
 
   const handleGenerateShoppingList = () => {
@@ -404,20 +425,27 @@ function Pantry({
     }
   }
 
-  const handleRemovePantryItem = async (id: string) => {
+  const handleBulkRemove = async () => {
     try {
       setError('')
 
-      const response = await fetch(
-        `http://localhost:8087/pantry-items/${id}`,
-        {
-          method: 'DELETE',
-        }
+      await Promise.all(
+        selectedItemIds.map(async (id) => {
+          const response = await fetch(
+            `http://localhost:8087/pantry-items/${id}`,
+            {
+              method: 'DELETE',
+            }
+          )
+          if (!response.ok) {
+            throw new Error('Could not remove pantry item')
+          }
+        })
       )
-      if (!response.ok) {
-        throw new Error('Could not remove pantry item')
-      }
+
       await loadPantry()
+      clearSelection()
+      setConfirmDeleteOpen(false)
     } catch (err) {
       console.error(err)
       setError('Unable to remove pantry item.')
@@ -570,6 +598,7 @@ function Pantry({
         {loading && <Loading message="Loading your pantry..." fullScreen={false} />}
         {error && <p>{error}</p>}
 
+        <section className="pantry-card">
         <div className="pantry-toolbar">
           <div className="pantry-search">
             <input
@@ -828,8 +857,7 @@ function Pantry({
           </div>
         )}
 
-        <section className="pantry-card">
-          {filteredItems.length === 0 && !loading ? (
+        {filteredItems.length === 0 && !loading ? (
             <p className="pantry-empty-search">
               {pantryItems.length === 0
                 ? 'No pantry items yet.'
@@ -846,6 +874,8 @@ function Pantry({
                   <PantryItemRow
                     key={item.id}
                     item={item}
+                    isSelected={selectedItemIds.includes(item.id)}
+                    onToggleSelect={() => toggleItemSelection(item.id)}
                     editingItemId={editingItemId}
                     editingQuantity={editingQuantity}
                     setEditingQuantity={setEditingQuantity}
@@ -853,10 +883,8 @@ function Pantry({
                     nutritionLoadingId={nutritionLoadingId}
                     nutritionErrorById={nutritionErrorById}
                     nutritionById={nutritionById}
-                    onAddToShoppingList={handleAddToShoppingList}
                     onStartEdit={handleStartEdit}
                     onSaveEdit={handleSaveEdit}
-                    onRemove={handleRemovePantryItem}
                     onShowNutrition={handleShowNutrition}
                   />
                 ))}
@@ -867,6 +895,8 @@ function Pantry({
               <PantryItemRow
                 key={item.id}
                 item={item}
+                isSelected={selectedItemIds.includes(item.id)}
+                onToggleSelect={() => toggleItemSelection(item.id)}
                 editingItemId={editingItemId}
                 editingQuantity={editingQuantity}
                 setEditingQuantity={setEditingQuantity}
@@ -874,15 +904,88 @@ function Pantry({
                 nutritionLoadingId={nutritionLoadingId}
                 nutritionErrorById={nutritionErrorById}
                 nutritionById={nutritionById}
-                onAddToShoppingList={handleAddToShoppingList}
                 onStartEdit={handleStartEdit}
                 onSaveEdit={handleSaveEdit}
-                onRemove={handleRemovePantryItem}
                 onShowNutrition={handleShowNutrition}
               />
             ))
           )}
         </section>
+
+        {selectedItemIds.length > 0 && (
+          <div className="pantry-bulk-bar">
+            <span className="pantry-bulk-count">
+              {selectedItemIds.length} selected
+            </span>
+
+            <button
+              type="button"
+              className="pantry-bulk-add"
+              onClick={handleBulkAddToShoppingList}
+            >
+              Add to Shopping Cart
+            </button>
+
+            <button
+              type="button"
+              className="pantry-bulk-delete"
+              onClick={() => setConfirmDeleteOpen(true)}
+            >
+              Delete
+            </button>
+          </div>
+        )}
+
+        {confirmDeleteOpen && (
+          <div
+            className="pantry-filter-overlay"
+            onClick={() => setConfirmDeleteOpen(false)}
+          >
+            <div
+              className="pantry-filter-modal pantry-confirm-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Confirm delete"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="pantry-filter-modal-header">
+                <h2>Delete items?</h2>
+                <button
+                  type="button"
+                  className="pantry-filter-close"
+                  aria-label="Close confirm delete"
+                  onClick={() => setConfirmDeleteOpen(false)}
+                >
+                  ×
+                </button>
+              </div>
+
+              <p className="pantry-confirm-text">
+                Are you sure you want to delete {selectedItemIds.length}{' '}
+                {selectedItemIds.length === 1 ? 'item' : 'items'}? This cannot be
+                undone.
+              </p>
+
+              <div className="pantry-filter-modal-footer">
+                <button
+                  type="button"
+                  className="pantry-clear-filters"
+                  onClick={() => setConfirmDeleteOpen(false)}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  className="pantry-confirm-delete"
+                  onClick={handleBulkRemove}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   )
