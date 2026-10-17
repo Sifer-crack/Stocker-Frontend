@@ -1,15 +1,25 @@
 import { NavLink } from 'react-router-dom'
 import './Sidebar.css'
 import { useUser } from '../context/UserContext'
-import { useAuth } from '../context/AuthContext'
 
 interface SidebarProps {
   estimatedCost: number
+  isHidden?: boolean
+  isPeek?: boolean
+  isClosing?: boolean
+  onMouseLeave?: () => void
+  onMouseEnter?: () => void
 }
 
-function Sidebar({ estimatedCost }: SidebarProps) {
+function Sidebar({
+  estimatedCost,
+  isHidden = false,
+  isPeek = false,
+  isClosing = false,
+  onMouseLeave,
+  onMouseEnter,
+}: SidebarProps) {
   const { user } = useUser()
-  const { logout } = useAuth()
 
   const weeklyBudget = user?.groceryBudget ?? 0
   const remainingBudget = weeklyBudget - estimatedCost
@@ -23,16 +33,23 @@ function Sidebar({ estimatedCost }: SidebarProps) {
     { label: 'Shopping List', path: '/shopping-list' },
     { label: 'Shopping Options', path: '/store-recommendations' },
     { label: 'Shopping Route', path: '/shopping-route' },
-    { label: 'Account', path: '/account' },
   ]
 
-  return (
-    <aside className="sidebar">
-      <div className="sidebar-logo">
-        <div className="logo-icon"></div>
-        <span>STOCKER</span>
-      </div>
+  const className = isPeek
+    ? `sidebar sidebar--peek${isClosing ? ' sidebar--peek-closing' : ''}`
+    : isHidden
+      ? 'sidebar sidebar--hidden'
+      : 'sidebar'
+  const hidden = isHidden && !isPeek
 
+  return (
+    <aside
+      className={className}
+      onMouseLeave={onMouseLeave}
+      onMouseEnter={onMouseEnter}
+      aria-hidden={hidden || undefined}
+      inert={hidden || undefined}
+    >
       <nav className="sidebar-nav">
         {navItems.map((item) => (
           <NavLink
@@ -43,7 +60,7 @@ function Sidebar({ estimatedCost }: SidebarProps) {
             }
           >
             <span className="nav-dot"></span>
-            {item.label}
+            <span className="nav-label">{item.label}</span>
           </NavLink>
         ))}
       </nav>
@@ -61,25 +78,6 @@ function Sidebar({ estimatedCost }: SidebarProps) {
           </div>
 
           <span>${remainingBudget.toFixed(2)} remaining</span>
-        </section>
-
-        <section className="user-card">
-          <div className="user-avatar">
-            {user?.firstName?.charAt(0) ?? 'U'}
-            {user?.lastName?.charAt(0) ?? ''}
-          </div>
-
-          <div>
-            <strong>
-              {[user?.firstName, user?.lastName]
-                .filter(Boolean)
-                .join(' ') || 'Stocker User'}
-            </strong>
-            <p>{user?.email ?? ''}</p>
-          </div>
-          <button type="button" onClick={logout}>
-            Log out
-          </button>
         </section>
       </div>
     </aside>
