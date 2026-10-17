@@ -1,9 +1,12 @@
 .sidebar {
   width: 320px;
-  min-height: calc(100vh - 64px);
+  position: sticky;
+  top: 64px;
+  align-self: flex-start;
+  height: calc(100vh - 64px);
   background: var(--surface);
   border-right: 1px solid var(--border);
-  padding: 32px 20px 24px;
+  padding: 24px 20px 20px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -62,7 +65,7 @@
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   width: 280px;
 }
 
@@ -72,10 +75,10 @@
   border: none;
   background: transparent;
   color: var(--text-muted-2);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
-  padding: 16px 18px;
-  border-radius: 14px;
+  padding: 12px 18px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -118,8 +121,8 @@
   background: #198754;
   color: #ffffff;
   border-radius: 20px;
-  padding: 20px;
-  margin-bottom: 22px;
+  padding: 18px;
+  margin-bottom: 0;
 }
 
 .budget-card p {

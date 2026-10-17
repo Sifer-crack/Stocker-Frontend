@@ -60,6 +60,7 @@ function PantryItemRow({
   nutritionById,
   onStartEdit,
   onSaveEdit,
+  onCancelEdit,
   onShowNutrition,
 }: {
   item: PantryDisplayItem
@@ -74,6 +75,7 @@ function PantryItemRow({
   nutritionById: Record<string, NutritionResult>
   onStartEdit: (item: PantryDisplayItem) => void
   onSaveEdit: (id: string) => void
+  onCancelEdit: () => void
   onShowNutrition: (item: PantryDisplayItem) => void
 }) {
   return (
@@ -118,12 +120,21 @@ function PantryItemRow({
           {expandedNutritionId === item.id ? 'Hide Nutrition' : 'Nutrition'}
         </button>
         {editingItemId === item.id ? (
-          <button
-            type="button"
-            onClick={() => onSaveEdit(item.id)}
-          >
-            Save
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => onSaveEdit(item.id)}
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              className="cancel-edit-button"
+              onClick={onCancelEdit}
+            >
+              Cancel
+            </button>
+          </>
         ) : (
           <button
             type="button"
@@ -230,6 +241,24 @@ function Pantry({
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
+
+  useEffect(() => {
+    if (editingItemId === null) {
+      return
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setEditingItemId(null)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [editingItemId])
 
   const toggleItemSelection = (id: string) => {
     setSelectedItemIds((previous) =>
@@ -455,6 +484,10 @@ function Pantry({
   const handleStartEdit = (item: PantryDisplayItem) => {
     setEditingItemId(item.id)
     setEditingQuantity(item.quantity)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingItemId(null)
   }
 
   const handleShowNutrition = async (item: PantryDisplayItem) => {
@@ -885,6 +918,7 @@ function Pantry({
                     nutritionById={nutritionById}
                     onStartEdit={handleStartEdit}
                     onSaveEdit={handleSaveEdit}
+                    onCancelEdit={handleCancelEdit}
                     onShowNutrition={handleShowNutrition}
                   />
                 ))}
@@ -906,6 +940,7 @@ function Pantry({
                 nutritionById={nutritionById}
                 onStartEdit={handleStartEdit}
                 onSaveEdit={handleSaveEdit}
+                onCancelEdit={handleCancelEdit}
                 onShowNutrition={handleShowNutrition}
               />
             ))
