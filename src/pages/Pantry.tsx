@@ -196,6 +196,8 @@ function Pantry({
   const [searchField, setSearchField] = useState<'name' | 'quantity'>('name')
   const [groupByCategory, setGroupByCategory] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [addItemOpen, setAddItemOpen] = useState(false)
+  const [productCategoryFilters, setProductCategoryFilters] = useState<string[]>([])
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const availableCategories = Array.from(new Set(pantryItems.map((item) => item.category?.trim() || "Uncategorised")))
@@ -394,6 +396,8 @@ function Pantry({
       setSelectedProduct(null)
       setProductResults([])
       setNewItemQuantity(1)
+      setProductCategoryFilters([])
+      setAddItemOpen(false)
     } catch (err) {
       console.error(err)
       setError('Unable to add pantry item')
@@ -500,6 +504,14 @@ function Pantry({
     return searchField === 'name' ? item.name.toLowerCase().includes(normalizedSearch) : String(item.quantity).includes(normalizedSearch)
   })
 
+  const filteredProductResults = productResults.filter((product) => {
+    if (productCategoryFilters.length === 0) {
+      return true
+    }
+    const category = product.groceryType?.trim() || 'Uncategorised'
+    return productCategoryFilters.includes(category)
+  })
+
   // group filtered items by category
   const groupedPantryItems = filteredItems.reduce<Record<string, PantryDisplayItem[]>>((groups, item) => {
     const category = item.category?.trim() || 'Uncategorised'
@@ -529,7 +541,14 @@ function Pantry({
       <header className="pantry-header">
         <div>
           <h1>My Pantry</h1>
-          <p>Keep track of what you already have at home.</p>
+          <div className="pantry-header-stats">
+            <span>
+              <strong>{pantryItems.length}</strong> pantry items
+            </span>
+            <span className="pantry-header-stat-low">
+              <strong>{pantryItems.filter((item) => item.lowStock).length}</strong> running low
+            </span>
+          </div>
         </div>
 
         <div className="pantry-header-actions">
@@ -547,75 +566,9 @@ function Pantry({
         </div>
       </header>
 
-      <div className="add-pantry-container">
-        <div className="add-pantry-form">
-          <div className="product-search-container" ref={productSearchRef}>
-            <input
-                type="text"
-                placeholder="Find a product to add to pantry..."
-                value={newItemName}
-                onChange={(event) => handleProductSearch(event.target.value)}
-            />
-
-            {productResults.length > 0 && !selectedProduct && (
-                <div className="product-dropdown">
-                  {productResults.map((product) => (
-                    <button
-                      type="button"
-                      key={product.productId}
-                      className="product-dropdown-item"
-                      onClick={() => {
-                        setSelectedProduct(product)
-                        setNewItemName(
-                          `${product.productName} - ${getProductSize(product)}`
-                        )
-                        setProductResults([])
-                      }}
-                    >
-                      <span>{product.productName}</span>
-                      <span>{getProductSize(product)}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <input
-              type="number"
-              min="1"
-              value={newItemQuantity}
-              onChange={(event) =>
-                setNewItemQuantity(Number(event.target.value))
-              }
-            />
-          </div>
-
-          <button
-            type="button"
-            className="add-pantry-button"
-            onClick={handleAddPantryItem}
-            disabled={!selectedProduct || newItemQuantity < 1}
-          >
-            Add Pantry Item
-          </button>
-        </div>
-
       <div className="pantry-content">
         {loading && <Loading message="Loading your pantry..." fullScreen={false} />}
         {error && <p>{error}</p>}
-        <div className="pantry-summary">
-          <div>
-            <span>Pantry items</span>
-            <strong>{pantryItems.length}</strong>
-          </div>
-
-          <div>
-            <span>Running low</span>
-            <strong>
-              {pantryItems.filter((item) => item.lowStock).length}
-            </strong>
-          </div>
-        </div>
 
         <div className="pantry-toolbar">
           <div className="pantry-search">
@@ -655,6 +608,16 @@ function Pantry({
             onClick={() => setGroupByCategory(!groupByCategory)}
           >
             {groupByCategory ? 'Sort Alphabetically' : 'Group by Category'}
+          </button>
+
+          <button
+            type="button"
+            className="add-pantry-button add-pantry-button-compact"
+            onClick={() => setAddItemOpen(true)}
+            aria-label="Add Pantry Item"
+          >
+            <span className="add-pantry-plus">+</span>
+            <span className="add-pantry-label">Add Pantry Item</span>
           </button>
         </div>
 
@@ -738,6 +701,127 @@ function Pantry({
                   onClick={() => setFiltersOpen(false)}
                 >
                   Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {addItemOpen && (
+          <div
+            className="pantry-filter-overlay"
+            onClick={() => setAddItemOpen(false)}
+          >
+            <div
+              className="pantry-filter-modal pantry-add-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Add pantry item"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="pantry-filter-modal-header">
+                <h2>Add Pantry Item</h2>
+                <button
+                  type="button"
+                  className="pantry-filter-close"
+                  aria-label="Close add pantry item"
+                  onClick={() => setAddItemOpen(false)}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="pantry-filter-modal-field">
+                <label htmlFor="add-item-search">Search for a product</label>
+                <div className="product-search-container" ref={productSearchRef}>
+                  <input
+                    id="add-item-search"
+                    type="text"
+                    placeholder="Find a product to add to pantry..."
+                    value={newItemName}
+                    onChange={(event) => handleProductSearch(event.target.value)}
+                  />
+
+                  {filteredProductResults.length > 0 && !selectedProduct && (
+                    <div className="product-dropdown">
+                      {filteredProductResults.map((product) => (
+                        <button
+                          type="button"
+                          key={product.productId}
+                          className="product-dropdown-item"
+                          onClick={() => {
+                            setSelectedProduct(product)
+                            setNewItemName(
+                              `${product.productName} - ${getProductSize(product)}`
+                            )
+                            setProductResults([])
+                          }}
+                        >
+                          <span>{product.productName}</span>
+                          <span>{getProductSize(product)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pantry-filter-modal-field">
+                <label htmlFor="add-item-quantity">Quantity</label>
+                <input
+                  id="add-item-quantity"
+                  type="number"
+                  min="1"
+                  value={newItemQuantity}
+                  onChange={(event) =>
+                    setNewItemQuantity(Number(event.target.value))
+                  }
+                />
+              </div>
+
+              <div className="pantry-filter-modal-field">
+                <span className="pantry-filter-modal-label">Filter by</span>
+                <div className="pantry-category-filter-options">
+                  {availableCategories.map((category) => (
+                    <button
+                      key={category}
+                      type="button"
+                      className={`pantry-filter-button ${
+                        productCategoryFilters.includes(category) ? 'active' : ''
+                      }`}
+                      aria-pressed={productCategoryFilters.includes(category)}
+                      onClick={() => {
+                        setProductCategoryFilters((previous) =>
+                          previous.includes(category)
+                            ? previous.filter((selected) => selected !== category)
+                            : [...previous, category]
+                        )
+                      }}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {error && <p className="pantry-add-error">{error}</p>}
+
+              <div className="pantry-filter-modal-footer">
+                <button
+                  type="button"
+                  className="pantry-clear-filters"
+                  onClick={() => setAddItemOpen(false)}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  className="pantry-filter-done"
+                  onClick={handleAddPantryItem}
+                  disabled={!selectedProduct || newItemQuantity < 1}
+                >
+                  Add Pantry Item
                 </button>
               </div>
             </div>
