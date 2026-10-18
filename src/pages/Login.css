@@ -33,6 +33,65 @@
   color: var(--text-muted);
 }
 
+.oauth-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--text-main);
+}
+
+.oauth-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.oauth-icon {
+  flex-shrink: 0;
+}
+
+.oauth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.oauth-divider::before,
+.oauth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.login-retry {
+  display: block;
+  margin-top: 20px;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.login-retry:hover {
+  background: var(--accent-hover);
+  color: #ffffff;
+}
+
 .login-form {
   display: flex;
   flex-direction: column;
