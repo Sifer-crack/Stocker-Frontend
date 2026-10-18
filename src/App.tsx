@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import Login from './pages/Login'
 import SignUp from './pages/SignUp'
+import OAuthCallback from './pages/OAuthCallback'
 import Dashboard from './pages/Dashboard'
 import ShoppingList from './pages/ShoppingList'
 import StoreRecommendations from './pages/StoreRecommendations'
@@ -168,6 +169,7 @@ function App() {
         path="/signup"
         element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <SignUp />}
       />
+      <Route path="/oauth/callback" element={<OAuthCallback />} />
 
       <Route
         element={
