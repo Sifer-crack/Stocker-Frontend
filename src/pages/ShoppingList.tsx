@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
 import { useAuth } from '../context/AuthContext'
@@ -10,6 +10,22 @@ import {
 } from '../lib/spendingReport'
 import './ShoppingList.css'
 import type { ShoppingItem } from '../App'
+
+interface ShoppingListApiItem {
+  shoppingListId: string
+  productId: string
+  quantity: number
+  shoppingListItemId: string
+  status: string
+}
+
+interface ProductApiItem {
+  productId: string
+  productName: string
+  groceryType: string | null
+  sellingWeightKg: number | null
+  sellingVolumeL: number | null
+}
 
 interface ShoppingListProps {
   items: ShoppingItem[]
@@ -23,10 +39,78 @@ function ShoppingList({
   const navigate = useNavigate()
   const { user } = useUser()
   const { accessToken } = useAuth()
-  const weeklyBudget = user?.groceryBudget ?? 0
+
+  const [isLoading, setIsLoading] = useState(false)
+  const [apiError, setApiError] = useState('')
   const [itemName, setItemName] = useState('')
   const [completedItems, setCompletedItems] = useState<number[]>([])
   const [completionMessage, setCompletionMessage] = useState('')
+
+  useEffect(() => {
+    if (!user?.id) {
+      setItems([])
+      return
+    }
+    const controller = new AbortController()
+    const loadShoppingList = async () => {
+      setIsLoading(true)
+      setApiError('')
+
+      try {
+        const response = await fetch(
+            `http://localhost:8083/shopping-lists?userId=${user.id}`,
+            { signal: controller.signal}
+        )
+
+        if (!response.ok) {
+          throw new Error('Unable to load your shopping list.')
+        }
+
+        const data = await response.json()
+        const shoppingListItems: ShoppingListApiItem[] =
+            Array.isArray(data) ? data : data.value
+
+        const loadedItems: ShoppingItem[] = await Promise.all(
+            shoppingListItems.map(async (item) => {
+              const productResponse = await fetch(
+                  `http://localhost:8082/products/${item.productId}`,
+                  { signal: controller.signal }
+              )
+              if (!productResponse.ok) {
+                throw new Error(`Unable to load product ${item.productId}.`)
+              }
+                  const product: ProductApiItem =
+                      await productResponse.json()
+
+                  return {
+                    name: product.productName,
+                    productId: item.productId,
+                    shoppingListItemId: item.shoppingListItemId,
+                    quantity: item.quantity,
+                    status: item.status,
+                  }
+            })
+        )
+        setItems(loadedItems)
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          return
+        }
+
+        console.error('Unable to load shopping list: ', error)
+        setApiError('Unable to load your shopping list.')
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadShoppingList()
+    return () => controller.abort()
+  }, [user?.id, setItems]);
+
+  const weeklyBudget = user?.groceryBudget ?? 0
   const toggleCompleted = (index: number) => {
   if (completedItems.includes(index)) {
     setCompletedItems(
@@ -36,16 +120,36 @@ function ShoppingList({
     setCompletedItems([...completedItems, index])
   }
 }
-const removeItem = (index: number) => {
-  setItems(items.filter((_, i) => i !== index))
+const removeItem = async (index: number) => {
+    const item = items[index]
+  if (!item) {
+    return
+  }
 
-  setCompletedItems(
-    completedItems
+  if (item.shoppingListItemId) {
+    if (!user?.id) {
+      setApiError('You must be signed in to remove items.')
+      return
+    }
+    try {
+      const response = await fetch(`http://localhost:8083/shopping-lists/items/${item.shoppingListItemId}?userId=${user.id}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) {
+        throw new Error('Unable to remove shopping list item.')
+      }
+    } catch (error) {
+      console.error('Unable to remove item: ', error)
+      setApiError('Unable to remove the item. Please try again')
+      return
+    }
+  }
+
+  setItems((currentItems) => currentItems.filter((_, i) => i !== index))
+  setCompletedItems((currentCompleted) =>
+  currentCompleted
       .filter((itemIndex) => itemIndex !== index)
-      .map((itemIndex) =>
-        itemIndex > index ? itemIndex - 1 : itemIndex
-      )
-  )
+      .map((itemIndex) => itemIndex > index ? itemIndex - 1 : itemIndex))
 }
 
 const completeShopping = async () => {
@@ -158,7 +262,7 @@ const addItem = () => {
   }
 
   const estimatedCost = items.reduce(
-    (total, item) => total + getItemPrice(item),
+    (total, item) => total + getItemPrice(item) * (item.quantity ?? 1),
     0
   )
   const remainingBudget = weeklyBudget - estimatedCost
@@ -191,11 +295,17 @@ const addItem = () => {
 
       <div className="shopping-content">
         <section className="shopping-list-card">
-          {items.length === 0 ? (
-            <p className="empty-list">No items added yet.</p>
+          {isLoading ? (
+              <p className="empty-list">Loading shopping list...</p>
+          ) : apiError ? (
+              <p className="completion-message" role="alert">
+                {apiError}
+              </p>
+          ) : items.length === 0 ? (
+              <p className="empty-list">No items added yet.</p>
           ) : (
-            <ul className="shopping-items">
-              {items.map((item, index) => (
+              <ul className="shopping-items">
+                {items.map((item, index) => (
                 <li key={index} className="shopping-item">
                   <div className="shopping-item-info">
                     <button
@@ -211,12 +321,14 @@ const addItem = () => {
 
                     <div>
                       <strong>{item.name}</strong>
-                      <p>Qty 1</p>
+                      <p>Qty {item.quantity ?? 1}</p>
                     </div>
                   </div>
 
                   <div className="shopping-item-actions">
-                    <span>Est. ${getItemPrice(item).toFixed(2)}</span>
+                    <span>
+                      Est. ${(getItemPrice(item) * (item.quantity ?? 1)).toFixed(2)}
+                    </span>
 
                     <button
                       type="button"

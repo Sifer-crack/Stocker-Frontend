@@ -19,6 +19,9 @@ import { LandingPage } from './landing-page'
 export interface ShoppingItem {
   name: string
   productId?: string
+  shoppingListItemId?: string
+  quantity?: number
+  status: string
 }
 
 function AppLayout() {
