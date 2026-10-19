@@ -19,17 +19,40 @@ export interface ShoppingListItemInput {
   quantity: number
 }
 
+export type FulfilmentMethod = 'delivery' | 'click_and_collect'
+
+export interface FulfilmentOption {
+  method: FulfilmentMethod
+  /** The delivery or click-and-collect fee. */
+  cost: number
+  /** Items total + cost. */
+  totalAmount: number
+}
+
 export interface StoreTotal {
+  /** Lower case here, unlike the upper-case chain ids in /match results. */
   chainId: string
+  /** Items only, without any fulfilment fee. */
   totalAmount: number
   currency: string
   itemsPriced: number
   unavailableItemIds: string[]
+  /** Relative to the selected chain's totalWithFulfilment; negative when this chain is dearer. */
   savingsAmount: number
+  /** Equals totalAmount when no fee applies. */
+  totalWithFulfilment: number
+  /** Null = the chain has no fee data (no fee applied). */
+  bestMethod: FulfilmentMethod | null
+  /** The fee of bestMethod (0 when null). */
+  fulfilmentCost: number
+  /** Every allowed option the chain offers; empty when bestMethod is null. */
+  fulfilmentOptions: FulfilmentOption[]
 }
 
 export interface CompareShoppingListResult {
+  /** May be empty: chains that offer methods but none of the allowed ones are left out. */
   storeTotals: StoreTotal[]
+  /** Includes fulfilment fees; "" when storeTotals is empty. */
   cheapestChainId: string
   selectedChainId: string
 }

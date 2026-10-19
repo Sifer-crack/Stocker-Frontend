@@ -13,8 +13,16 @@ export const CHAINS: readonly ChainInfo[] = [
   { id: 'WOOLWORTHS', label: 'Woolworths' },
 ]
 
+/**
+ * Chain ids differ in case between endpoints (/match is UPPER case; compare, shopping items and favorites are
+ * lower case) and the compare endpoint matches `selectedChainId` case-sensitively. Compare chains with this.
+ */
+export function normChain(chainId: string): string {
+  return chainId.trim().toLowerCase()
+}
+
 export function chainLabel(chainId: string): string {
-  return CHAINS.find((chain) => chain.id === chainId.toUpperCase())?.label ?? chainId
+  return CHAINS.find((chain) => normChain(chain.id) === normChain(chainId))?.label ?? chainId
 }
 
 export function cheapestMatch(matches: readonly MatchView[]): MatchView | null {

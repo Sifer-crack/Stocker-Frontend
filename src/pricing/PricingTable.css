@@ -94,3 +94,46 @@
   margin: 0 0 12px;
   font-size: 15px;
 }
+
+.pricing-methods {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pricing-methods legend {
+  padding: 0;
+  margin-bottom: 8px;
+  color: #173022;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pricing-methods label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: #173022;
+  font-size: 15px;
+}
+
+.pricing-options summary {
+  cursor: pointer;
+  color: #198754;
+  font-size: 13px;
+}
+
+.pricing-options ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: #718075;
+  font-size: 13px;
+}
+
+.pricing-methods input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  accent-color: #198754;
+}

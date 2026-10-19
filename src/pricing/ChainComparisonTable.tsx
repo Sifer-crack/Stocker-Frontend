@@ -1,5 +1,5 @@
 import './PricingTable.css'
-import { CHAINS, cheapestMatch } from './chains.ts'
+import { CHAINS, cheapestMatch, normChain } from './chains.ts'
 import { formatPrice, formatUnitPrice, storeLabel } from './format.ts'
 import type { MatchView } from './types.ts'
 
@@ -26,7 +26,7 @@ export function ChainComparisonTable({ matches }: ChainComparisonTableProps) {
       </thead>
       <tbody>
         {CHAINS.map((chain) => {
-          const match = matches.find((candidate) => candidate.chainId === chain.id)
+          const match = matches.find((candidate) => normChain(candidate.chainId) === normChain(chain.id))
           if (!match) {
             return (
               <tr key={chain.id}>

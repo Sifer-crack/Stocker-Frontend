@@ -1,7 +1,9 @@
 import { API_BASE } from '../lib/apiConfig.ts'
 import { authFetch, readErrorMessage } from '../lib/authFetch.ts'
+import { normChain } from './chains.ts'
 import type {
   CompareShoppingListResult,
+  FulfilmentMethod,
   MatchItemResponse,
   SearchResultResponse,
   ShoppingListItemInput,
@@ -52,7 +54,10 @@ export function searchPrices(params: SearchPricesParams, accessToken: string | n
 export interface CompareShoppingListParams {
   items: ShoppingListItemInput[]
   region: string
+  /** Any case; sent lower case, because the backend matches it case-sensitively. */
   selectedChainId?: string
+  /** Omit or leave empty for all methods. */
+  allowedMethods?: FulfilmentMethod[]
 }
 
 export function compareShoppingList(
@@ -65,7 +70,8 @@ export function compareShoppingList(
     body: JSON.stringify({
       items: params.items,
       region: params.region,
-      selectedChainId: params.selectedChainId || null,
+      selectedChainId: params.selectedChainId ? normChain(params.selectedChainId) : null,
+      ...(params.allowedMethods && params.allowedMethods.length > 0 ? { allowedMethods: params.allowedMethods } : {}),
     }),
   })
 }
