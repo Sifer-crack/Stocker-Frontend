@@ -6,7 +6,7 @@ import { newId } from '../lib/uuid.ts'
 import { PricingApiError } from '../pricing/api.ts'
 import { cheapestMatch } from '../pricing/chains.ts'
 import { matchWithPolling } from '../pricing/matchPolling.ts'
-import type { ChainMatch, MatchMethod } from '../pricing/types.ts'
+import type { MatchItemResponse, MatchMethod, MatchView } from '../pricing/types.ts'
 
 export type PriceStatus = 'pending' | 'ready' | 'empty' | 'error'
 
@@ -20,8 +20,11 @@ export interface ShoppingItem {
 
 export interface ItemPrices {
   status: PriceStatus
-  matches: ChainMatch[]
+  matches: MatchView[]
+  alternatives: MatchView[]
   matchMethod: MatchMethod | null
+  /** Some prices are older than the backend's freshness threshold and a refresh may be running. */
+  stale: boolean
   error: string | null
   updatedAt: string | null
 }
@@ -47,7 +50,15 @@ interface ShoppingListContextType {
 const ShoppingListContext = createContext<ShoppingListContextType | undefined>(undefined)
 
 const EMPTY_LIST: StoredList = { items: [], prices: {} }
-const PENDING_PRICES: ItemPrices = { status: 'pending', matches: [], matchMethod: null, error: null, updatedAt: null }
+const PENDING_PRICES: ItemPrices = {
+  status: 'pending',
+  matches: [],
+  alternatives: [],
+  matchMethod: null,
+  stale: false,
+  error: null,
+  updatedAt: null,
+}
 
 const PRICE_STATUSES: readonly string[] = ['pending', 'ready', 'empty', 'error']
 
@@ -94,7 +105,15 @@ function readStored(userId: string | null): StoredList {
     const raw = localStorage.getItem(storageKey(userId))
     if (!raw) return EMPTY_LIST
     const data: unknown = JSON.parse(raw)
-    return isStoredList(data) ? data : EMPTY_LIST
+    if (!isStoredList(data)) return EMPTY_LIST
+    // Lists saved before alternatives/stale existed lack those fields.
+    const prices = Object.fromEntries(
+      Object.entries(data.prices).map(([id, saved]) => [
+        id,
+        { ...saved, alternatives: saved.alternatives ?? [], stale: saved.stale ?? false },
+      ]),
+    )
+    return { items: data.items, prices }
   } catch {
     // Storage unavailable (private mode, blocked) or corrupt JSON: start with an empty list.
     return EMPTY_LIST
@@ -153,15 +172,26 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       setPrices(item.id, { ...previous, status: 'pending', error: null })
 
       try {
-        const result = await matchWithPolling({ term: item.name, itemId: item.id }, () => tokenRef.current, signal)
-        if (result === null) return // aborted: the item was removed, refreshed, or the user changed
-        setPrices(item.id, {
-          status: result.matches.length > 0 ? 'ready' : 'empty',
-          matches: result.matches,
-          matchMethod: result.matches.length > 0 ? result.matchMethod : null,
+        const toPrices = (response: MatchItemResponse, status: PriceStatus): ItemPrices => ({
+          status,
+          matches: response.matches,
+          alternatives: response.alternatives,
+          matchMethod: response.matches.length > 0 ? response.matchMethod : null,
+          stale: response.stale,
           error: null,
           updatedAt: new Date().toISOString(),
         })
+        const result = await matchWithPolling(
+          { term: item.name, itemId: item.id },
+          () => tokenRef.current,
+          signal,
+          // Show stale prices straight away; the status stays 'pending' while the refresh is awaited.
+          (interim) => {
+            if (interim.matches.length > 0) setPrices(item.id, toPrices(interim, 'pending'))
+          },
+        )
+        if (result === null) return // aborted: the item was removed, refreshed, or the user changed
+        setPrices(item.id, toPrices(result, result.matches.length > 0 ? 'ready' : 'empty'))
       } catch (err) {
         if (signal.aborted) return
         const message = err instanceof PricingApiError ? err.message : 'Could not reach the pricing service.'

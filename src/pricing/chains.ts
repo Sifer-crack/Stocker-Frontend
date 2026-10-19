@@ -1,4 +1,4 @@
-import type { ChainMatch } from './types.ts'
+import type { MatchView } from './types.ts'
 
 export interface ChainInfo {
   /** Matches the backend's ChainId enum. */
@@ -14,11 +14,11 @@ export const CHAINS: readonly ChainInfo[] = [
 ]
 
 export function chainLabel(chainId: string): string {
-  return CHAINS.find((chain) => chain.id === chainId)?.label ?? chainId
+  return CHAINS.find((chain) => chain.id === chainId.toUpperCase())?.label ?? chainId
 }
 
-export function cheapestMatch(matches: readonly ChainMatch[]): ChainMatch | null {
-  let best: ChainMatch | null = null
+export function cheapestMatch(matches: readonly MatchView[]): MatchView | null {
+  let best: MatchView | null = null
   for (const match of matches) {
     if (best === null || match.priceAmount < best.priceAmount) best = match
   }

@@ -34,8 +34,8 @@ export interface CompareShoppingListResult {
   selectedChainId: string
 }
 
-/** The one product a chain matched to a requested item (GET /api/pricing/match). */
-export interface ChainMatch {
+/** One product the price engine matched to a requested item (GET /api/pricing/match). */
+export interface MatchView {
   chainId: string
   storeId: string
   productName: string
@@ -46,14 +46,25 @@ export interface ChainMatch {
   capturedAt: string | null
   /** 0..1 similarity between the requested term and productName. */
   score: number
+  /** Always null today: there is nothing to link to, so don't render a link. */
   productUrl: string | null
+  /** "exact" for `matches`, "alternative" for `alternatives`. */
+  matchType: 'exact' | 'alternative'
+  /** Price per kg, L or item; null when the pack size is unknown. */
+  unitPrice: number | null
+  /** The pack size as the backend parsed it, e.g. "2l" or "500g". */
+  packSize: string | null
 }
 
-/** "lexical" means the backend's embedding provider was unavailable and it fell back to keyword scoring. */
-export type MatchMethod = 'semantic' | 'lexical'
+/** "lexical" means the backend fell back to keyword scoring instead of its canonical product match. */
+export type MatchMethod = 'canonical' | 'lexical'
 
 export interface MatchItemResponse {
   matchMethod: MatchMethod
-  /** At most one per chain. Empty means nothing found (yet). */
-  matches: ChainMatch[]
+  /** At most one per chain, cheapest first. Empty (with empty `alternatives`) means nothing stored yet, not an error. */
+  matches: MatchView[]
+  /** Similar products that are not the exact thing asked for; show them apart from `matches`. */
+  alternatives: MatchView[]
+  /** Some prices are older than 12 h and a refresh may be running, so asking again shortly can return newer ones. */
+  stale: boolean
 }

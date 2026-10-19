@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { useAuth } from '../context/AuthContext.tsx'
 import { newId } from '../lib/uuid.ts'
 import { PricingApiError } from './api.ts'
+import { AlternativesTable } from './AlternativesTable.tsx'
 import { ChainComparisonTable } from './ChainComparisonTable.tsx'
 import { chainLabel, cheapestMatch } from './chains.ts'
 import { formatPrice } from './format.ts'
@@ -28,6 +29,7 @@ export function PriceSearch() {
   const [term, setTerm] = useState('')
   const [searchedTerm, setSearchedTerm] = useState('')
   const [result, setResult] = useState<MatchItemResponse | null>(null)
+  const [updating, setUpdating] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const controllerRef = useRef<AbortController | null>(null)
@@ -46,15 +48,25 @@ export function PriceSearch() {
     setLoading(true)
     setError(null)
     setResult(null)
+    setUpdating(false)
     try {
       const response = await matchWithPolling(
         { term: trimmed, itemId: searchItemId(trimmed) },
         () => accessToken,
         controller.signal,
+        (interim) => {
+          // Stale prices are worth showing straight away while the backend refreshes them.
+          if (interim.matches.length > 0 || interim.alternatives.length > 0) {
+            setSearchedTerm(trimmed)
+            setResult(interim)
+            setUpdating(interim.stale)
+          }
+        },
       )
       if (response === null) return // superseded by a newer search, or the page was left
       setSearchedTerm(trimmed)
       setResult(response)
+      setUpdating(false)
     } catch (err) {
       if (controller.signal.aborted) return
       setError(err instanceof PricingApiError ? err.message : 'Could not reach the pricing service.')
@@ -64,6 +76,8 @@ export function PriceSearch() {
   }
 
   const matches = result?.matches ?? []
+  const alternatives = result?.alternatives ?? []
+  const nothingStored = result !== null && matches.length === 0 && alternatives.length === 0
   const cheapest = cheapestMatch(matches)
 
   return (
@@ -88,12 +102,18 @@ export function PriceSearch() {
         </button>
       </form>
 
-      {loading && <p className="pricing-empty">Checking each supermarket… this can take up to about 20 seconds.</p>}
+      {loading && !updating && <p className="pricing-empty">Checking each supermarket… this can take up to about 20 seconds.</p>}
 
       {error && <p className="pricing-error">{error}</p>}
 
-      {result && matches.length === 0 && !loading && (
-        <p className="pricing-empty">No matching products found for “{searchedTerm}”. Try different wording.</p>
+      {nothingStored && !loading && (
+        <p className="pricing-empty">No prices yet for “{searchedTerm}”, we&apos;ll keep looking. Try again shortly, or use different wording.</p>
+      )}
+
+      {updating && <p className="pricing-empty">Updating prices…</p>}
+
+      {result && result.stale && !updating && !loading && (matches.length > 0 || alternatives.length > 0) && (
+        <p className="pricing-empty">Some of these prices may be out of date.</p>
       )}
 
       {matches.length > 0 && (
@@ -106,7 +126,7 @@ export function PriceSearch() {
           )}
           {result?.matchMethod === 'lexical' && (
             <p className="pricing-empty">
-              Matched by keyword because the semantic matcher was unavailable, so a match may be less accurate.
+              Matched by keyword because the product matcher was unavailable, so a match may be less accurate.
             </p>
           )}
           <div className="pricing-table-wrap">
@@ -114,6 +134,8 @@ export function PriceSearch() {
           </div>
         </>
       )}
+
+      <AlternativesTable alternatives={alternatives} />
     </div>
   )
 }

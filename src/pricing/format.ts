@@ -16,3 +16,15 @@ export function storeLabel(storeId: string): string {
     return storeId
   }
 }
+
+/** The backend sends the unit price without its unit; infer it from the pack size ("2l" -> per L). */
+function unitLabel(packSize: string | null): string {
+  if (packSize && /(ml|l)$/i.test(packSize.trim())) return 'L'
+  if (packSize && /(kg|g)$/i.test(packSize.trim())) return 'kg'
+  return 'item'
+}
+
+/** e.g. "$2.10 / L". */
+export function formatUnitPrice(unitPrice: number, currency: string, packSize: string | null): string {
+  return `${formatPrice(unitPrice, currency)} / ${unitLabel(packSize)}`
+}

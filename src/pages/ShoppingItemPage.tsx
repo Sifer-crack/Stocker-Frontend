@@ -1,6 +1,7 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useShoppingList } from '../context/ShoppingListContext'
 import { useUser } from '../context/UserContext'
+import { AlternativesTable } from '../pricing/AlternativesTable.tsx'
 import { ChainComparisonTable } from '../pricing/ChainComparisonTable.tsx'
 import { chainLabel, cheapestMatch } from '../pricing/chains.ts'
 import { formatPrice } from '../pricing/format.ts'
@@ -36,6 +37,7 @@ function ShoppingItemPage() {
   const itemPrices = prices[item.id]
   const status = itemPrices?.status ?? 'pending'
   const matches = itemPrices?.matches ?? []
+  const alternatives = itemPrices?.alternatives ?? []
   const cheapest = cheapestMatch(matches)
   const priciest = matches.reduce((max, match) => Math.max(max, match.priceAmount), 0)
   const saving = cheapest && matches.length > 1 ? priciest - cheapest.priceAmount : 0
@@ -50,7 +52,7 @@ function ShoppingItemPage() {
       <header className="shopping-header">
         <div>
           <h1>{item.name}</h1>
-          <p>Qty {item.quantity} · the same product at each supermarket, matched by meaning.</p>
+          <p>Qty {item.quantity} · the same product at each supermarket.</p>
         </div>
 
         <div className="shopping-header-actions">
@@ -67,20 +69,22 @@ function ShoppingItemPage() {
       </header>
 
       <div className="item-page-body">
-        {status === 'pending' && (
+        {status === 'pending' && matches.length === 0 && (
           <p className="item-status">
             Fetching prices from New World, PAK&apos;nSAVE and Woolworths… this can take a few seconds.
           </p>
         )}
 
+        {status === 'pending' && matches.length > 0 && <p className="item-note">Updating prices…</p>}
+
         {status === 'error' && (
           <p className="pricing-error">{itemPrices?.error ?? 'Could not fetch prices for this item.'}</p>
         )}
 
-        {status === 'empty' && (
+        {status === 'empty' && alternatives.length === 0 && (
           <p className="item-status">
-            No matching products were found at any chain. Try Refresh, or re-add the item with a more specific
-            name.
+            No prices yet, we&apos;ll keep looking. Try Refresh in a little while, or re-add the item with a more
+            specific name.
           </p>
         )}
 
@@ -96,7 +100,7 @@ function ShoppingItemPage() {
 
             {itemPrices?.matchMethod === 'lexical' && (
               <p className="item-note">
-                Matched by keyword because the semantic matcher was unavailable, so a match may be less accurate.
+                Matched by keyword because the product matcher was unavailable, so a match may be less accurate.
               </p>
             )}
 
@@ -104,11 +108,17 @@ function ShoppingItemPage() {
               <ChainComparisonTable matches={matches} />
             </div>
 
+            {itemPrices?.stale && status !== 'pending' && (
+              <p className="item-note">Some of these prices may be out of date.</p>
+            )}
+
             {itemPrices?.updatedAt && (
               <p className="item-note">Checked {new Date(itemPrices.updatedAt).toLocaleString()}</p>
             )}
           </>
         )}
+
+        <AlternativesTable alternatives={alternatives} />
       </div>
     </main>
   )

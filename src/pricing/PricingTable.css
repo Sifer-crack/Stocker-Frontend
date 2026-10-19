@@ -79,3 +79,18 @@
   background: #e0e6dd;
   color: #173022;
 }
+
+.pricing-alternatives {
+  margin-top: 28px;
+}
+
+.pricing-alternatives h4 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  color: #173022;
+}
+
+.pricing-alternatives > p {
+  margin: 0 0 12px;
+  font-size: 15px;
+}

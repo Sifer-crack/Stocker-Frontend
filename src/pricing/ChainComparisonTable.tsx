@@ -1,10 +1,10 @@
 import './PricingTable.css'
 import { CHAINS, cheapestMatch } from './chains.ts'
-import { formatPrice, storeLabel } from './format.ts'
-import type { ChainMatch } from './types.ts'
+import { formatPrice, formatUnitPrice, storeLabel } from './format.ts'
+import type { MatchView } from './types.ts'
 
 interface ChainComparisonTableProps {
-  matches: readonly ChainMatch[]
+  matches: readonly MatchView[]
 }
 
 /** One fixed row per supported chain, so a chain with no match reads "Not found" instead of vanishing. */
@@ -41,17 +41,17 @@ export function ChainComparisonTable({ matches }: ChainComparisonTableProps) {
             <tr key={chain.id} className={match === cheapest ? 'pricing-row-best' : ''}>
               <td>{chain.label}</td>
               <td>
-                {match.productUrl ? (
-                  <a href={match.productUrl} target="_blank" rel="noopener noreferrer">
-                    {match.productName}
-                  </a>
-                ) : (
-                  match.productName
-                )}
+                {match.productName}
                 {match.brand && <div className="pricing-muted">{match.brand}</div>}
+                {match.packSize && <div className="pricing-muted">{match.packSize}</div>}
               </td>
               <td>
                 <strong>{formatPrice(match.priceAmount, match.currency)}</strong>
+                {match.unitPrice != null && (
+                  <div className="pricing-muted">
+                    {formatUnitPrice(match.unitPrice, match.currency, match.packSize)}
+                  </div>
+                )}
                 {match === cheapest && <div className="pricing-muted">Cheapest</div>}
               </td>
               <td>{match.promoFlag ? 'Yes' : '—'}</td>
