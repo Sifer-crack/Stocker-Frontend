@@ -305,3 +305,7 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.shopping-error {
+  margin: 24px 44px 0;
+}

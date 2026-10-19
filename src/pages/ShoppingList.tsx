@@ -3,12 +3,16 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useShoppingList } from '../context/ShoppingListContext'
 import type { ItemPrices, ShoppingItem } from '../context/ShoppingListContext'
 import { useUser } from '../context/UserContext'
-import { chainLabel, cheapestMatch } from '../pricing/chains.ts'
+import { chainLabel } from '../pricing/chains.ts'
 import { formatPrice } from '../pricing/format.ts'
+import '../pricing/PricingTable.css'
 import './ShoppingList.css'
 
+/** After this long without a comparison, "Fetching prices…" would be misleading: the backend may be waiting for a later push. */
+const STILL_LOOKING_AFTER_MS = 2 * 60 * 1000
+
 function ItemPriceCell({ item, prices }: { item: ShoppingItem; prices: ItemPrices | undefined }) {
-  const cheapest = cheapestMatch(prices?.matches ?? [])
+  const cheapest = prices?.cheapest
   if (cheapest) {
     return (
       <span className="item-price-cell">
@@ -17,11 +21,16 @@ function ItemPriceCell({ item, prices }: { item: ShoppingItem; prices: ItemPrice
       </span>
     )
   }
-  if (!prices || prices.status === 'pending') {
-    return <span className="item-price-status">Fetching prices…</span>
+  if (prices?.status === 'unavailable') {
+    return <span className="item-price-status">Can&apos;t price this item</span>
   }
-  if (prices.status === 'error') {
-    return <span className="item-price-status">Price lookup failed</span>
+  if (!prices || prices.status === 'pending') {
+    const waitedLong = Date.now() - Date.parse(item.createdAt) > STILL_LOOKING_AFTER_MS
+    return (
+      <span className="item-price-status">
+        {waitedLong ? 'Still looking for prices…' : 'Fetching prices…'}
+      </span>
+    )
   }
   return <span className="item-price-status">No prices found</span>
 }
@@ -29,7 +38,7 @@ function ItemPriceCell({ item, prices }: { item: ShoppingItem; prices: ItemPrice
 function ShoppingList() {
   const navigate = useNavigate()
   const { user } = useUser()
-  const { items, prices, estimatedCost, addItem, removeItem, toggleCompleted } = useShoppingList()
+  const { items, prices, estimatedCost, addItem, removeItem, toggleCompleted, error } = useShoppingList()
   const weeklyBudget = user?.groceryBudget ?? 0
   const [itemName, setItemName] = useState('')
 
@@ -42,7 +51,7 @@ function ShoppingList() {
   }
 
   const completedCount = items.filter((item) => item.completed).length
-  const unpricedCount = items.filter((item) => cheapestMatch(prices[item.id]?.matches ?? []) === null).length
+  const unpricedCount = items.filter((item) => !prices[item.id]?.cheapest).length
   const remainingBudget = weeklyBudget - estimatedCost
   const progressPercentage =
     items.length === 0
@@ -70,6 +79,8 @@ function ShoppingList() {
           </button>
         </div>
       </header>
+
+      {error && <p className="pricing-error shopping-error">{error}</p>}
 
       <div className="shopping-content">
         <section className="shopping-list-card">

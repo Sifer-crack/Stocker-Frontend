@@ -2,294 +2,339 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react'
 import { useAuth } from './AuthContext'
 import { useUser } from './UserContext'
-import { newId } from '../lib/uuid.ts'
+import { API_BASE } from '../lib/apiConfig'
+import { runSse } from '../lib/sseStream'
 import { PricingApiError } from '../pricing/api.ts'
-import { cheapestMatch } from '../pricing/chains.ts'
 import { matchWithPolling } from '../pricing/matchPolling.ts'
+import { addShoppingItem, listShoppingItems, parseShoppingItemUpdate } from '../pricing/shoppingApi.ts'
+import type { ComparisonStatus, PriceView, ServerShoppingItem } from '../pricing/shoppingApi.ts'
 import type { MatchItemResponse, MatchMethod, MatchView } from '../pricing/types.ts'
 
-export type PriceStatus = 'pending' | 'ready' | 'empty' | 'error'
-
 export interface ShoppingItem {
-  /** Also the itemId the backend stores this item's matched prices under. */
+  /** The server's item id; also the itemId pricing stores this item's matched prices under. */
   id: string
   name: string
   quantity: number
+  /** Local only: the backend has no check-off yet, so this is remembered in this browser. */
   completed: boolean
+  createdAt: string
 }
 
+/** The server-side price comparison for an item, kept current by the live stream. */
 export interface ItemPrices {
-  status: PriceStatus
+  status: ComparisonStatus
+  cheapest: PriceView | null
+  prices: PriceView[]
+  comparedAt: string | null
+}
+
+/** Per-chain match detail from GET /api/pricing/match, loaded on demand (e.g. on the item page). */
+export interface ItemDetail {
+  status: 'loading' | 'ready' | 'empty' | 'error'
   matches: MatchView[]
   alternatives: MatchView[]
   matchMethod: MatchMethod | null
-  /** Some prices are older than the backend's freshness threshold and a refresh may be running. */
   stale: boolean
   error: string | null
   updatedAt: string | null
 }
 
-interface StoredList {
-  items: ShoppingItem[]
-  prices: Record<string, ItemPrices>
-}
-
 interface ShoppingListContextType {
   items: ShoppingItem[]
   prices: Record<string, ItemPrices>
-  /** Sum of the cheapest matched price x quantity; items with no price yet are excluded. */
+  details: Record<string, ItemDetail>
+  /** Sum of the cheapest compared price x quantity; items with no price yet are excluded. */
   estimatedCost: number
-  /** Adds the item and immediately starts fetching its prices. No-op for blank/duplicate names or before the user has loaded. */
+  /** Adds the item on the server. No-op for blank/duplicate names or before the user has loaded. */
   addItem: (name: string) => void
+  /** Local only: hides the item in this browser (the backend has no delete yet). */
   removeItem: (id: string) => void
   toggleCompleted: (id: string) => void
-  /** Re-runs the price match for one item. */
+  /** (Re)loads one item's per-chain match detail. */
   refreshItem: (id: string) => void
+  /** The last problem talking to the server, or '' when all is well. */
+  error: string
 }
 
 const ShoppingListContext = createContext<ShoppingListContextType | undefined>(undefined)
 
-const EMPTY_LIST: StoredList = { items: [], prices: {} }
-const PENDING_PRICES: ItemPrices = {
-  status: 'pending',
-  matches: [],
-  alternatives: [],
-  matchMethod: null,
-  stale: false,
-  error: null,
-  updatedAt: null,
+/** Local state the backend cannot hold yet: which items are ticked off or hidden. */
+interface Overlay {
+  completed: string[]
+  removed: string[]
 }
 
-const PRICE_STATUSES: readonly string[] = ['pending', 'ready', 'empty', 'error']
+const EMPTY_OVERLAY: Overlay = { completed: [], removed: [] }
 
-function storageKey(userId: string): string {
-  return `stocker.shoppingList.${userId}`
+function overlayKey(userId: string): string {
+  return `stocker.shoppingList.overlay.${userId}`
 }
 
-function isRecord(data: unknown): data is Record<string, unknown> {
-  return typeof data === 'object' && data !== null
+function isStringArray(data: unknown): data is string[] {
+  return Array.isArray(data) && data.every((entry) => typeof entry === 'string')
 }
 
-function isShoppingItem(data: unknown): data is ShoppingItem {
-  return (
-    isRecord(data) &&
-    typeof data.id === 'string' &&
-    typeof data.name === 'string' &&
-    typeof data.quantity === 'number' &&
-    typeof data.completed === 'boolean'
-  )
-}
-
-function isItemPrices(data: unknown): data is ItemPrices {
-  return (
-    isRecord(data) &&
-    typeof data.status === 'string' &&
-    PRICE_STATUSES.includes(data.status) &&
-    Array.isArray(data.matches)
-  )
-}
-
-function isStoredList(data: unknown): data is StoredList {
-  return (
-    isRecord(data) &&
-    Array.isArray(data.items) &&
-    data.items.every(isShoppingItem) &&
-    isRecord(data.prices) &&
-    Object.values(data.prices).every(isItemPrices)
-  )
-}
-
-function readStored(userId: string | null): StoredList {
-  if (!userId) return EMPTY_LIST
+function readOverlay(userId: string | null): Overlay {
+  if (!userId) return EMPTY_OVERLAY
   try {
-    const raw = localStorage.getItem(storageKey(userId))
-    if (!raw) return EMPTY_LIST
+    const raw = localStorage.getItem(overlayKey(userId))
+    if (!raw) return EMPTY_OVERLAY
     const data: unknown = JSON.parse(raw)
-    if (!isStoredList(data)) return EMPTY_LIST
-    // Lists saved before alternatives/stale existed lack those fields.
-    const prices = Object.fromEntries(
-      Object.entries(data.prices).map(([id, saved]) => [
-        id,
-        { ...saved, alternatives: saved.alternatives ?? [], stale: saved.stale ?? false },
-      ]),
-    )
-    return { items: data.items, prices }
+    if (typeof data === 'object' && data !== null && 'completed' in data && 'removed' in data) {
+      if (isStringArray(data.completed) && isStringArray(data.removed)) {
+        return { completed: data.completed, removed: data.removed }
+      }
+    }
   } catch {
-    // Storage unavailable (private mode, blocked) or corrupt JSON: start with an empty list.
-    return EMPTY_LIST
+    // Storage unavailable (private mode, blocked) or corrupt JSON: start with no overlay.
+  }
+  return EMPTY_OVERLAY
+}
+
+function writeOverlay(userId: string, overlay: Overlay): void {
+  try {
+    localStorage.setItem(overlayKey(userId), JSON.stringify(overlay))
+  } catch {
+    // Persistence is a convenience; the in-memory overlay still works without it.
   }
 }
 
-function writeStored(userId: string, list: StoredList): void {
-  try {
-    localStorage.setItem(storageKey(userId), JSON.stringify(list))
-  } catch {
-    // Persistence is a convenience; the in-memory list still works without it.
-  }
+/** A push or refetch must not roll an item back to an older comparison than the one already held. */
+function isOlder(incoming: ServerShoppingItem, held: ServerShoppingItem): boolean {
+  const incomingAt = incoming.comparedAt ? Date.parse(incoming.comparedAt) : Number.NaN
+  const heldAt = held.comparedAt ? Date.parse(held.comparedAt) : Number.NaN
+  if (Number.isNaN(heldAt)) return false
+  return Number.isNaN(incomingAt) || incomingAt < heldAt
 }
+
+function mergeItem(
+  current: Record<string, ServerShoppingItem>,
+  incoming: ServerShoppingItem,
+): Record<string, ServerShoppingItem> {
+  const held = current[incoming.id]
+  if (held && isOlder(incoming, held)) return current
+  // The payload is the item's full state, so replace it rather than patch it.
+  return { ...current, [incoming.id]: incoming }
+}
+
+function toMessage(err: unknown, fallback: string): string {
+  return err instanceof PricingApiError ? err.message : fallback
+}
+
+const EMPTY_SERVER_ITEMS: Record<string, ServerShoppingItem> = {}
 
 export function ShoppingListProvider({ children }: { children: ReactNode }) {
   const { accessToken } = useAuth()
   const { user } = useUser()
   const userId = user?.id ?? null
 
-  const [state, setState] = useState(() => ({ userId, list: readStored(userId) }))
-  if (state.userId !== userId) {
-    // Different user (login, logout, or the profile finishing loading): swap in that user's stored list.
-    setState({ userId, list: readStored(userId) })
+  const [serverItems, setServerItems] = useState(EMPTY_SERVER_ITEMS)
+  const [details, setDetails] = useState<Record<string, ItemDetail>>({})
+  const [overlayState, setOverlayState] = useState(() => ({ userId, overlay: readOverlay(userId) }))
+  const [error, setError] = useState('')
+  if (overlayState.userId !== userId) {
+    // Different user (login, logout, or the profile finishing loading): swap in that user's overlay.
+    setOverlayState({ userId, overlay: readOverlay(userId) })
+    setServerItems(EMPTY_SERVER_ITEMS)
+    setDetails({})
   }
-  const list = state.list
+  const overlay = overlayState.overlay
 
-  const listRef = useRef(list)
-  const userIdRef = useRef(userId)
   const tokenRef = useRef(accessToken)
+  const itemsRef = useRef(serverItems)
+  const userIdRef = useRef(userId)
   const controllers = useRef(new Map<string, AbortController>())
 
   useEffect(() => {
-    listRef.current = list
-    userIdRef.current = userId
     tokenRef.current = accessToken
+    itemsRef.current = serverItems
+    userIdRef.current = userId
   })
 
-  const setPrices = useCallback((itemId: string, next: ItemPrices) => {
-    setState((prev) =>
-      // The item may have been removed while its request was in flight.
-      prev.list.items.some((item) => item.id === itemId)
-        ? { ...prev, list: { ...prev.list, prices: { ...prev.list.prices, [itemId]: next } } }
-        : prev,
-    )
-  }, [])
-
-  const runMatch = useCallback(
-    async (item: ShoppingItem) => {
-      controllers.current.get(item.id)?.abort()
-      const controller = new AbortController()
-      controllers.current.set(item.id, controller)
-      const { signal } = controller
-
-      // Keep the last known prices visible while a refresh is in flight.
-      const previous = listRef.current.prices[item.id] ?? PENDING_PRICES
-      setPrices(item.id, { ...previous, status: 'pending', error: null })
-
-      try {
-        const toPrices = (response: MatchItemResponse, status: PriceStatus): ItemPrices => ({
-          status,
-          matches: response.matches,
-          alternatives: response.alternatives,
-          matchMethod: response.matches.length > 0 ? response.matchMethod : null,
-          stale: response.stale,
-          error: null,
-          updatedAt: new Date().toISOString(),
-        })
-        const result = await matchWithPolling(
-          { term: item.name, itemId: item.id },
-          () => tokenRef.current,
-          signal,
-          // Show stale prices straight away; the status stays 'pending' while the refresh is awaited.
-          (interim) => {
-            if (interim.matches.length > 0) setPrices(item.id, toPrices(interim, 'pending'))
-          },
-        )
-        if (result === null) return // aborted: the item was removed, refreshed, or the user changed
-        setPrices(item.id, toPrices(result, result.matches.length > 0 ? 'ready' : 'empty'))
-      } catch (err) {
-        if (signal.aborted) return
-        const message = err instanceof PricingApiError ? err.message : 'Could not reach the pricing service.'
-        setPrices(item.id, { ...previous, status: 'error', error: message })
-      } finally {
-        if (controllers.current.get(item.id) === controller) {
-          controllers.current.delete(item.id)
-        }
-      }
-    },
-    [setPrices],
-  )
-
-  // Requests interrupted by a reload or a user switch are still 'pending' in storage: resume them.
   useEffect(() => {
-    const running = controllers.current
-    for (const item of listRef.current.items) {
-      if (listRef.current.prices[item.id]?.status === 'pending') {
-        void runMatch(item)
+    if (userId) writeOverlay(userId, overlay)
+  }, [userId, overlay])
+
+  // Load the list and keep it live. On every (re)connect the list is fetched again, which covers any push
+  // that was missed while disconnected.
+  const signedIn = accessToken !== null
+  useEffect(() => {
+    if (!signedIn || userId === null) return
+    const controller = new AbortController()
+
+    const refetch = async () => {
+      try {
+        const loaded = await listShoppingItems(tokenRef.current, controller.signal)
+        if (controller.signal.aborted) return
+        // Items are never deleted server-side, so keep any held item the list did not include yet (e.g. one just added).
+        setServerItems((current) => loaded.reduce(mergeItem, current))
+        setError('')
+      } catch (err) {
+        if (!controller.signal.aborted) setError(toMessage(err, 'Could not load your shopping list.'))
       }
     }
+
+    void runSse({
+      url: `${API_BASE}/api/updates/shopping`,
+      getToken: () => tokenRef.current,
+      onOpen: () => void refetch(),
+      onEvent: (event, data) => {
+        if (event !== 'shopping-item-updated') return
+        const update = parseShoppingItemUpdate(data)
+        if (update) setServerItems((current) => mergeItem(current, update.item))
+      },
+      signal: controller.signal,
+    })
+
+    return () => controller.abort()
+  }, [signedIn, userId])
+
+  useEffect(() => {
+    const running = controllers.current
     return () => {
       for (const controller of running.values()) controller.abort()
       running.clear()
     }
-  }, [userId, runMatch])
+  }, [userId])
 
-  useEffect(() => {
-    if (userId) writeStored(userId, list)
-  }, [userId, list])
-
-  const addItem = useCallback(
-    (rawName: string) => {
-      const name = rawName.trim()
-      // Without a user there is no list to add to: it would be swapped out when the profile loads.
-      if (name === '' || userIdRef.current === null) return
-      if (listRef.current.items.some((existing) => existing.name.toLowerCase() === name.toLowerCase())) return
-
-      const item: ShoppingItem = { id: newId(), name, quantity: 1, completed: false }
-      setState((prev) => ({
-        ...prev,
-        list: {
-          items: [...prev.list.items, item],
-          prices: { ...prev.list.prices, [item.id]: PENDING_PRICES },
-        },
+  const items = useMemo<ShoppingItem[]>(() => {
+    const removed = new Set(overlay.removed)
+    const completed = new Set(overlay.completed)
+    return Object.values(serverItems)
+      .filter((item) => !removed.has(item.id))
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        completed: completed.has(item.id),
+        createdAt: item.createdAt,
       }))
-      void runMatch(item)
-    },
-    [runMatch],
+  }, [serverItems, overlay])
+
+  const prices = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.values(serverItems).map((item): [string, ItemPrices] => [
+          item.id,
+          { status: item.comparisonStatus, cheapest: item.cheapest, prices: item.prices, comparedAt: item.comparedAt },
+        ]),
+      ),
+    [serverItems],
   )
+
+  const addItem = useCallback((rawName: string) => {
+    const name = rawName.trim()
+    // Without a user there is no list to add to: it would be swapped out when the profile loads.
+    if (name === '' || userIdRef.current === null) return
+    const existing = Object.values(itemsRef.current).find((item) => item.name.toLowerCase() === name.toLowerCase())
+    if (existing) {
+      // Re-adding something hidden locally brings it back rather than creating a duplicate on the server.
+      setOverlayState((prev) => ({
+        ...prev,
+        overlay: { ...prev.overlay, removed: prev.overlay.removed.filter((id) => id !== existing.id) },
+      }))
+      return
+    }
+
+    addShoppingItem({ name, quantity: 1 }, tokenRef.current)
+      .then((created) => {
+        setServerItems((current) => mergeItem(current, created))
+        setError('')
+      })
+      .catch((err: unknown) => setError(toMessage(err, 'Could not add that item.')))
+  }, [])
 
   const removeItem = useCallback((id: string) => {
     controllers.current.get(id)?.abort()
     controllers.current.delete(id)
-    setState((prev) => {
-      const { [id]: _removed, ...prices } = prev.list.prices
-      return { ...prev, list: { items: prev.list.items.filter((item) => item.id !== id), prices } }
-    })
+    setOverlayState((prev) =>
+      prev.overlay.removed.includes(id)
+        ? prev
+        : { ...prev, overlay: { ...prev.overlay, removed: [...prev.overlay.removed, id] } },
+    )
   }, [])
 
   const toggleCompleted = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      list: {
-        ...prev.list,
-        items: prev.list.items.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item)),
-      },
-    }))
+    setOverlayState((prev) => {
+      const { completed } = prev.overlay
+      return {
+        ...prev,
+        overlay: {
+          ...prev.overlay,
+          completed: completed.includes(id) ? completed.filter((candidate) => candidate !== id) : [...completed, id],
+        },
+      }
+    })
   }, [])
 
-  const refreshItem = useCallback(
-    (id: string) => {
-      const item = listRef.current.items.find((candidate) => candidate.id === id)
-      if (item) void runMatch(item)
-    },
-    [runMatch],
-  )
+  const refreshItem = useCallback((id: string) => {
+    const item = itemsRef.current[id]
+    if (!item) return
+
+    controllers.current.get(id)?.abort()
+    const controller = new AbortController()
+    controllers.current.set(id, controller)
+    const { signal } = controller
+
+    const toDetail = (response: MatchItemResponse, status: ItemDetail['status']): ItemDetail => ({
+      status,
+      matches: response.matches,
+      alternatives: response.alternatives,
+      matchMethod: response.matches.length > 0 ? response.matchMethod : null,
+      stale: response.stale,
+      error: null,
+      updatedAt: new Date().toISOString(),
+    })
+
+    // Keep the last known detail visible while a refresh is in flight.
+    setDetails((current) => ({
+      ...current,
+      [id]: { ...(current[id] ?? { matches: [], alternatives: [], matchMethod: null, stale: false, updatedAt: null }), status: 'loading', error: null },
+    }))
+
+    matchWithPolling(
+      { term: item.name, itemId: id },
+      () => tokenRef.current,
+      signal,
+      (interim) => {
+        // Show stale prices straight away; the status stays 'loading' while the refresh is awaited.
+        if (interim.matches.length > 0) setDetails((current) => ({ ...current, [id]: toDetail(interim, 'loading') }))
+      },
+    )
+      .then((result) => {
+        if (result === null) return // aborted: the item was hidden, refreshed, or the user changed
+        const found = result.matches.length > 0 || result.alternatives.length > 0
+        setDetails((current) => ({ ...current, [id]: toDetail(result, found ? 'ready' : 'empty') }))
+      })
+      .catch((err: unknown) => {
+        if (signal.aborted) return
+        setDetails((current) => ({
+          ...current,
+          [id]: {
+            ...(current[id] ?? { matches: [], alternatives: [], matchMethod: null, stale: false, updatedAt: null }),
+            status: 'error',
+            error: toMessage(err, 'Could not reach the pricing service.'),
+          },
+        }))
+      })
+      .finally(() => {
+        if (controllers.current.get(id) === controller) controllers.current.delete(id)
+      })
+  }, [])
 
   const estimatedCost = useMemo(
     () =>
-      list.items.reduce((total, item) => {
-        const cheapest = cheapestMatch(list.prices[item.id]?.matches ?? [])
+      items.reduce((total, item) => {
+        const cheapest = prices[item.id]?.cheapest
         return cheapest ? total + cheapest.priceAmount * item.quantity : total
       }, 0),
-    [list],
+    [items, prices],
   )
 
   const value = useMemo<ShoppingListContextType>(
-    () => ({
-      items: list.items,
-      prices: list.prices,
-      estimatedCost,
-      addItem,
-      removeItem,
-      toggleCompleted,
-      refreshItem,
-    }),
-    [list, estimatedCost, addItem, removeItem, toggleCompleted, refreshItem],
+    () => ({ items, prices, details, estimatedCost, addItem, removeItem, toggleCompleted, refreshItem, error }),
+    [items, prices, details, estimatedCost, addItem, removeItem, toggleCompleted, refreshItem, error],
   )
 
   return <ShoppingListContext.Provider value={value}>{children}</ShoppingListContext.Provider>
