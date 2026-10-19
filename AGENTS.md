@@ -24,6 +24,9 @@ Before committing or concluding edits, verify:
 npm run lint && npm run build && npm test
 ```
 
+## CI
+`.github/workflows/ci.yml` runs `npm ci`, lint, `npm test` and build on pushes to `main`/`dev` and on every pull request.
+
 ## Modules & Architecture
 - `src/landing-page/`: Marketing landing page module with dedicated sections (Hero, Who We Are, Purpose/Mission, Features, Offerings) and isolated documentation at `src/landing-page/README.md`.
 - `src/pricing/`: Frontend for the Stocker-Backend price engine (`GET /api/pricing/match`, `GET /api/pricing/search`, `POST /api/pricing/compare` via the gateway; all need the gateway JWT, sent with `authFetch`). `/pricing` is user-facing: users type product names and compare their own shopping list, and never see item ids (keep it that way). See `src/pricing/README.md`. The gateway base URL is read once in `src/lib/apiConfig.ts` (`API_BASE`), shared with auth/identity: container env `API_BASE_URL` (via `/config.js`) > build-time `VITE_API_BASE_URL` > `http://localhost:8080`. `Pantry.tsx`/`Dashboard.tsx` go through the gateway via `src/lib/pantryApi.ts`. The access token is refreshed before it expires (`src/lib/session.ts`, `authFetch` retries once on 401). Compare includes delivery/click-and-collect costs (`src/pricing/fulfilment.ts`); chain ids differ in case between endpoints, so use `normChain()`.
