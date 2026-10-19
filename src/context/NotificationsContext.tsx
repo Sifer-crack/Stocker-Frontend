@@ -16,6 +16,8 @@ interface NotificationsContextType {
   loading: boolean
   error: string
   acknowledge: (id: string) => Promise<void>
+  /** Fetches now instead of waiting for the next poll (e.g. right after a pantry expiry change). */
+  refresh: () => Promise<void>
 }
 
 const NotificationsContext = createContext<NotificationsContextType | undefined>(undefined)
@@ -28,6 +30,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState('')
   const tokenRef = useRef(accessToken)
   const requestedNames = useRef(new Set<string>())
+  const loadRef = useRef<(() => Promise<void>) | null>(null)
   const signedIn = accessToken !== null
 
   useEffect(() => {
@@ -68,6 +71,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    loadRef.current = load
     void load()
     const timer = setInterval(() => {
       if (document.visibilityState === 'visible') void load()
@@ -78,11 +82,14 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     document.addEventListener('visibilitychange', onVisible)
 
     return () => {
+      loadRef.current = null
       controller.abort()
       clearInterval(timer)
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [signedIn])
+
+  const refresh = useCallback(() => loadRef.current?.() ?? Promise.resolve(), [])
 
   const acknowledge = useCallback(async (id: string) => {
     const updated = await acknowledgeNotification(id, tokenRef.current)
@@ -97,8 +104,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       acknowledge,
+      refresh,
     }),
-    [notifications, productNames, loading, error, acknowledge],
+    [notifications, productNames, loading, error, acknowledge, refresh],
   )
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>

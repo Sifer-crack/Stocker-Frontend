@@ -1,31 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchNutritionForFood } from '../lib/nutrition'
+import {
+  addPantryItem,
+  deletePantryItem,
+  getProduct,
+  listPantry,
+  searchProducts,
+  setPantryExpiry,
+  updatePantryQuantity,
+} from '../lib/pantryApi'
+import type { ProductApiItem } from '../lib/pantryApi'
 import type { NutritionResult } from '../lib/nutrition'
 import './Pantry.css'
+import { useAuth } from '../context/AuthContext'
+import { useNotifications } from '../context/NotificationsContext'
 import { useUser } from '../context/UserContext'
 
 interface PantryProps {
   onAddToShoppingList: (item: string) => void
-}
-
-interface PantryApiItem {
-  pantry_item_id: string
-  user_id: string
-  product_id: string
-  quantity: number
-  /** yyyy-mm-dd; null when the item has no expiry date. */
-  expirationDate: string | null
-  /** Days before expirationDate to be notified; null uses the backend's default. */
-  notifyDaysBefore: number | null
-}
-
-interface ProductApiItem {
-  productId: string
-  productName: string
-  groceryType: string | null
-  sellingWeightKg: number | null
-  sellingVolumeL: number | null
 }
 
 interface PantryDisplayItem {
@@ -38,25 +31,11 @@ interface PantryDisplayItem {
   notifyDaysBefore: number | null
 }
 
-/** The inventory service answers errors with {"message": "..."}. */
-const readInventoryError = async (response: Response, fallback: string): Promise<string> => {
-  try {
-    const data: unknown = await response.json()
-    if (typeof data === 'object' && data !== null && 'message' in data && typeof data.message === 'string') {
-      return data.message
-    }
-  } catch {
-    // No JSON body: use the fallback.
-  }
-  return fallback
-}
-
-/** Query params for the optional expiry fields; a threshold without a date is rejected by the backend. */
-const expiryParams = (params: URLSearchParams, expirationDate: string, notifyDaysBefore: string): void => {
-  if (expirationDate === '') return
-  params.set('expirationDate', expirationDate)
-  if (notifyDaysBefore !== '') params.set('notifyDaysBefore', notifyDaysBefore)
-}
+/** The optional expiry inputs as the API wants them; a reminder without a date is not allowed, so it is dropped. */
+const parseExpiry = (expirationDate: string, notifyDaysBefore: string) => ({
+  expirationDate: expirationDate === '' ? null : expirationDate,
+  notifyDaysBefore: expirationDate === '' || notifyDaysBefore === '' ? null : Number(notifyDaysBefore),
+})
 
 const getProductSize = (product: ProductApiItem): string => {
   if (product.sellingWeightKg != null) {
@@ -74,6 +53,8 @@ function Pantry({
 }: PantryProps) {
   const navigate = useNavigate()
   const { user } = useUser()
+  const { accessToken } = useAuth()
+  const { refresh: refreshNotifications } = useNotifications()
   const handleAddToShoppingList = (item: string) => {
     onAddToShoppingList(item)
     navigate('/shopping-list')
@@ -110,25 +91,11 @@ function Pantry({
         return
       }
 
-      const pantryResponse = await fetch(
-        `http://localhost:8087/pantry-items?userId=${user.id}`
-      )
-      if (!pantryResponse.ok) {
-        throw new Error('Could not load pantry')
-      }
-      const pantryData: PantryApiItem[] = await pantryResponse.json()
+      const pantryData = await listPantry(user.id, accessToken)
 
       const displayItems = await Promise.all(
         pantryData.map(async (pantryItem) => {
-          const productResponse = await fetch(
-            `http://localhost:8082/products/${pantryItem.product_id}`
-          )
-
-          if (!productResponse.ok) {
-            throw new Error('Could not load product')
-          }
-
-          const product: ProductApiItem = await productResponse.json()
+          const product = await getProduct(pantryItem.product_id, accessToken)
 
           return {
             id: pantryItem.pantry_item_id,
@@ -144,7 +111,7 @@ function Pantry({
       setPantryItems(displayItems)
     } catch (err) {
       console.error(err)
-      setError('Unable to load pantry from the server.')
+      setError(err instanceof Error ? err.message : 'Unable to load pantry from the server.')
     } finally {
       setLoading(false)
     }
@@ -165,15 +132,7 @@ function Pantry({
     }
 
     try {
-      const response = await fetch(
-          `http://localhost:8082/products/search?query=${encodeURIComponent(value)}`
-      )
-
-      if (!response.ok) {
-        throw new Error('Could not search products')
-      }
-
-      const products: ProductApiItem[] = await response.json()
+      const products = await searchProducts(value, accessToken)
 
       setProductResults(products)
     } catch (err) {
@@ -191,23 +150,17 @@ function Pantry({
     try {
       setError('')
 
-      const params = new URLSearchParams({
-        userId: user.id,
-        productId: selectedProduct.productId,
-        quantity: String(newItemQuantity),
-      })
-      expiryParams(params, newExpirationDate, newNotifyDays)
-
-      const response = await fetch(
-          `http://localhost:8087/pantry-items?${params.toString()}`,
-          {
-            method: 'POST',
-          }
+      const { expirationDate, notifyDaysBefore } = parseExpiry(newExpirationDate, newNotifyDays)
+      await addPantryItem(
+        {
+          userId: user.id,
+          productId: selectedProduct.productId,
+          quantity: newItemQuantity,
+          expirationDate: expirationDate ?? undefined,
+          notifyDaysBefore: notifyDaysBefore ?? undefined,
+        },
+        accessToken,
       )
-
-      if (!response.ok) {
-        throw new Error(await readInventoryError(response, 'Could not add pantry item'))
-      }
 
       // reload pantry from backend
       await loadPantry()
@@ -219,6 +172,7 @@ function Pantry({
       setNewExpirationDate('')
       setNewNotifyDays('')
       setShowAddForm(false)
+      void refreshNotifications()
     } catch (err) {
       console.error(err)
       setError(err instanceof Error ? err.message : 'Unable to add pantry item')
@@ -229,19 +183,11 @@ const handleRemovePantryItem = async (id: string) => {
   try {
     setError('')
 
-    const response = await fetch(
-      `http://localhost:8087/pantry-items/${id}`,
-      {
-        method: 'DELETE',
-      }
-    )
-    if (!response.ok) {
-      throw new Error('Could not remove pantry item')
-    }
+    await deletePantryItem(id, accessToken)
     await loadPantry()
   } catch (err) {
     console.error(err)
-    setError('Unable to remove pantry item.')
+    setError(err instanceof Error ? err.message : 'Unable to remove pantry item.')
   }
 }
 
@@ -295,37 +241,15 @@ const handleSaveEdit = async (id: string) => {
   try {
     setError('')
 
-    const params = new URLSearchParams({
-      quantity: String(editingQuantity),
-    })
-
-    const response = await fetch(
-      `http://localhost:8087/pantry-items/${id}?${params.toString()}`,
-      {
-        method: 'PUT',
-      }
-    )
-
-    if (!response.ok) {
-      throw new Error(await readInventoryError(response, 'Could not update pantry item'))
-    }
+    await updatePantryQuantity(id, editingQuantity, accessToken)
 
     // Sending neither field clears the expiry date.
-    const expiry = new URLSearchParams()
-    expiryParams(expiry, editingExpirationDate, editingNotifyDays)
-    const expiryResponse = await fetch(
-      `http://localhost:8087/pantry-items/${id}/expiry?${expiry.toString()}`,
-      {
-        method: 'PUT',
-      }
-    )
-
-    if (!expiryResponse.ok) {
-      throw new Error(await readInventoryError(expiryResponse, 'Could not update the expiry date'))
-    }
+    const { expirationDate, notifyDaysBefore } = parseExpiry(editingExpirationDate, editingNotifyDays)
+    await setPantryExpiry(id, expirationDate, notifyDaysBefore, accessToken)
 
     setEditingItemId(null)
     await loadPantry()
+    void refreshNotifications()
   } catch (err) {
     console.error(err)
     setError(err instanceof Error ? err.message : 'Unable to update pantry item.')
@@ -399,7 +323,8 @@ const handleSaveEdit = async (id: string) => {
               <input
                 type="number"
                 min="0"
-                placeholder="Default"
+                step="1"
+                placeholder="3"
                 value={newNotifyDays}
                 disabled={newExpirationDate === ''}
                 onChange={(event) => setNewNotifyDays(event.target.value)}
@@ -462,7 +387,8 @@ const handleSaveEdit = async (id: string) => {
                       <input
                         type="number"
                         min="0"
-                        placeholder="Default"
+                step="1"
+                        placeholder="3"
                         value={editingNotifyDays}
                         disabled={editingExpirationDate === ''}
                         onChange={(event) => setEditingNotifyDays(event.target.value)}
@@ -475,6 +401,7 @@ const handleSaveEdit = async (id: string) => {
                     {item.expirationDate && (
                       <p className="pantry-expiry">
                         Expires {new Date(`${item.expirationDate}T00:00:00`).toLocaleDateString()}
+                        {item.notifyDaysBefore !== null && ` (reminder ${item.notifyDaysBefore} days before)`}
                       </p>
                     )}
                   </>
