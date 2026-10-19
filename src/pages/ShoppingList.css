@@ -512,3 +512,25 @@
 .shopping-error {
   margin: 24px 44px 0;
 }
+
+/* Long names wrap inside their column instead of running over the price next to them. */
+.shopping-item-info > div {
+  min-width: 0;
+}
+
+.shopping-item-info strong,
+.shopping-item-info p,
+.item-price-status,
+.item-price-cell {
+  overflow-wrap: anywhere;
+}
+
+.shopping-item-actions span {
+  white-space: normal;
+  text-align: right;
+}
+
+.shopping-item-actions {
+  min-width: 0;
+  max-width: 45%;
+}

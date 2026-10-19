@@ -192,3 +192,18 @@
   border-color: var(--danger);
   color: var(--danger);
 }
+
+/* Long product names and notes wrap inside their cell. */
+.pricing-table td,
+.pricing-table th,
+.pricing-error,
+.pricing-empty,
+.pricing-disclaimer,
+.pricing-alternatives p,
+.refresh-chip {
+  overflow-wrap: anywhere;
+}
+
+.pricing-table td:first-child {
+  min-width: 140px;
+}

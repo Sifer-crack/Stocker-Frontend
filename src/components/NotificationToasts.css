@@ -84,3 +84,9 @@
     animation: none;
   }
 }
+
+.toast-body,
+.toast p,
+.toast strong {
+  overflow-wrap: anywhere;
+}
