@@ -441,7 +441,10 @@
 
 .shopping-list-toolbar {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 16px;
   padding: 20px 28px 0;
 }
