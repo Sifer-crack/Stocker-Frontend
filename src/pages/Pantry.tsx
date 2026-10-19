@@ -425,23 +425,37 @@ function Pantry({
     }
   }, [user])
 
+  const productSearchAbortRef = useRef<AbortController | null>(null)
+
   const handleProductSearch = async (value: string) => {
     setNewItemName(value)
     setSelectedProduct(null)
+    // Typing again supersedes the search still in flight.
+    productSearchAbortRef.current?.abort()
 
     if (value.trim().length < 2) {
       setProductResults([])
       return
     }
 
+    const controller = new AbortController()
+    productSearchAbortRef.current = controller
     try {
-      const products = await searchProducts(value, accessToken)
+      const products = await searchProducts(value, accessToken, controller.signal)
 
-      setProductResults(products)
+      if (!controller.signal.aborted) setProductResults(products)
     } catch (err) {
+      if (controller.signal.aborted) return
       console.error(err)
       setProductResults([])
     }
+  }
+
+  /** Opens the add form with whatever was typed in the pantry search bar already searched for. */
+  const openAddItem = () => {
+    setAddItemOpen(true)
+    const typed = searchInput.trim()
+    if (typed !== '') void handleProductSearch(typed)
   }
 
   const handleAddPantryItem = async () => {
@@ -686,7 +700,7 @@ function Pantry({
           <button
             type="button"
             className="add-pantry-button add-pantry-button-compact"
-            onClick={() => setAddItemOpen(true)}
+            onClick={openAddItem}
             aria-label="Add Pantry Item"
           >
             <span className="add-pantry-plus">+</span>

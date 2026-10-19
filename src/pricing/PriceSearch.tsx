@@ -78,13 +78,17 @@ export function PriceSearch() {
     }
   }
 
-  function handleCancel() {
+  function abortSearch() {
     controllerRef.current?.abort()
     controllerRef.current = null
     setLoading(false)
     setUpdating(false)
     setResult(null)
     setError(null)
+  }
+
+  function handleCancel() {
+    abortSearch()
     setCancelled(true)
   }
 
@@ -105,7 +109,11 @@ export function PriceSearch() {
           <span>Product</span>
           <input
             value={term}
-            onChange={(e) => setTerm(e.target.value)}
+            onChange={(e) => {
+              setTerm(e.target.value)
+              // Typing again drops the search still running for the old wording.
+              if (loading) abortSearch()
+            }}
             placeholder="e.g. full cream milk 2L"
             required
           />

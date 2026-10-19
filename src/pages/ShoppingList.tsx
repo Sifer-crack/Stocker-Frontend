@@ -65,6 +65,7 @@ function ShoppingList() {
   const [itemName, setItemName] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<ProductApiItem | null>(null)
   const [suggestions, setSuggestions] = useState<ProductApiItem[]>([])
+  const [menuOpen, setMenuOpen] = useState(false)
   const [completionMessage, setCompletionMessage] = useState('')
   const [completing, setCompleting] = useState(false)
   const productSearchRef = useRef<HTMLDivElement>(null)
@@ -80,19 +81,19 @@ function ShoppingList() {
       setSuggestions([])
       return
     }
-    let cancelled = false
+    const controller = new AbortController()
     // A short pause so each keystroke doesn't hit the catalog.
     const timer = window.setTimeout(() => {
-      searchProducts(query, tokenRef.current)
+      searchProducts(query, tokenRef.current, controller.signal)
         .then((products) => {
-          if (!cancelled) setSuggestions(products)
+          if (!controller.signal.aborted) setSuggestions(products)
         })
         .catch(() => {
-          if (!cancelled) setSuggestions([])
+          if (!controller.signal.aborted) setSuggestions([])
         })
     }, 250)
     return () => {
-      cancelled = true
+      controller.abort()
       window.clearTimeout(timer)
     }
   }, [itemName, selectedProduct])
@@ -100,7 +101,7 @@ function ShoppingList() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (productSearchRef.current && !productSearchRef.current.contains(event.target as Node)) {
-        setSuggestions([])
+        setMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -117,6 +118,7 @@ function ShoppingList() {
     setItemName('')
     setSelectedProduct(null)
     setSuggestions([])
+    setMenuOpen(false)
   }
 
   /** The catalog product behind a list item, so buying it can update the pantry. Items typed freely may have none. */
@@ -220,6 +222,7 @@ function ShoppingList() {
               onChange={(event) => {
                 setItemName(event.target.value)
                 setSelectedProduct(null)
+                setMenuOpen(true)
               }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') handleAddItem()
@@ -228,7 +231,7 @@ function ShoppingList() {
               aria-label="Add an item to the shopping list"
             />
 
-            {suggestions.length > 0 && !selectedProduct && (
+            {menuOpen && itemName.trim().length >= 2 && !selectedProduct && (
               <div className="product-dropdown">
                 {suggestions.map((product) => (
                   <button
@@ -240,12 +243,16 @@ function ShoppingList() {
                       const size = getProductSize(product)
                       setItemName(size ? `${product.productName} - ${size}` : product.productName)
                       setSuggestions([])
+                      setMenuOpen(false)
                     }}
                   >
                     <span>{product.productName}</span>
                     <span>{getProductSize(product)}</span>
                   </button>
                 ))}
+                <button type="button" className="product-dropdown-item" onClick={handleAddItem}>
+                  <span>Add &quot;{itemName.trim()}&quot; as a new item</span>
+                </button>
               </div>
             )}
           </div>

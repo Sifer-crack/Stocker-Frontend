@@ -95,9 +95,9 @@ export async function deletePantryItem(id: string, accessToken: string | null): 
   await ok(await authFetch(`${API_BASE}/api/pantry-items/${encodeURIComponent(id)}`, accessToken, { method: 'DELETE' }))
 }
 
-export function searchProducts(query: string, accessToken: string | null): Promise<ProductApiItem[]> {
+export function searchProducts(query: string, accessToken: string | null, signal?: AbortSignal): Promise<ProductApiItem[]> {
   const params = new URLSearchParams({ query })
-  return json(`${API_BASE}/api/products/search?${params.toString()}`, accessToken)
+  return json(`${API_BASE}/api/products/search?${params.toString()}`, accessToken, { signal })
 }
 
 export function getProduct(productId: string, accessToken: string | null): Promise<ProductApiItem> {
