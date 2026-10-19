@@ -36,10 +36,18 @@ export async function authFetch(
   if (response.status !== 401 || accessToken === null) return response
 
   const latest = getLatestToken()
-  const next = latest !== null && latest !== accessToken ? latest : ((await refreshSession())?.accessToken ?? null)
-  if (next === null) {
-    notifySessionExpired()
-    return response
+  let next: string | null = null
+  if (latest !== null && latest !== accessToken) {
+    next = latest
+  } else {
+    const refreshed = await refreshSession()
+    if (refreshed.status === 'denied') {
+      notifySessionExpired()
+      return response
+    }
+    // A network error says nothing about the session: give the caller the original 401 and keep the user signed in.
+    if (refreshed.status === 'error') return response
+    next = refreshed.tokens.accessToken
   }
   return send(next)
 }

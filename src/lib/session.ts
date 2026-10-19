@@ -18,7 +18,6 @@ export function parseSessionTokens(data: unknown): SessionTokens | null {
 }
 
 let latestToken: string | null = null
-let inflight: Promise<SessionTokens | null> | null = null
 const tokenListeners = new Set<(tokens: SessionTokens) => void>()
 const expiredListeners = new Set<() => void>()
 
@@ -49,27 +48,32 @@ export function notifySessionExpired(): void {
 }
 
 /**
- * Exchanges the httpOnly refresh cookie for a new access token. Refresh tokens rotate, so two parallel calls
- * would invalidate each other: all callers share the one in-flight request. Resolves null when there is no
- * valid session (never throws).
+ * "ok": new tokens. "denied": the refresh call answered 401 or similar, so there is no valid session.
+ * "error": the call itself failed (network, gateway restarting), which says nothing about the session.
  */
-export function refreshSession(): Promise<SessionTokens | null> {
-  inflight ??= (async () => {
+export type RefreshResult = { status: 'ok'; tokens: SessionTokens } | { status: 'denied' } | { status: 'error' }
+
+let inflightRefresh: Promise<RefreshResult> | null = null
+
+/**
+ * Exchanges the httpOnly refresh cookie for a new access token. Refresh tokens rotate, so two parallel calls
+ * would invalidate each other: all callers share the one in-flight request. Never throws.
+ */
+export function refreshSession(): Promise<RefreshResult> {
+  inflightRefresh ??= (async (): Promise<RefreshResult> => {
     try {
       const response = await fetch(`${API_BASE}/api/identity/refresh`, { method: 'POST', credentials: 'include' })
-      if (!response.ok) return null
+      if (!response.ok) return response.status >= 500 ? { status: 'error' } : { status: 'denied' }
       const tokens = parseSessionTokens(await response.json())
-      if (tokens) {
-        latestToken = tokens.accessToken
-        for (const listener of tokenListeners) listener(tokens)
-      }
-      return tokens
+      if (!tokens) return { status: 'error' }
+      latestToken = tokens.accessToken
+      for (const listener of tokenListeners) listener(tokens)
+      return { status: 'ok', tokens }
     } catch {
-      // No stored session (or backend unreachable).
-      return null
+      return { status: 'error' }
     } finally {
-      inflight = null
+      inflightRefresh = null
     }
   })()
-  return inflight
+  return inflightRefresh
 }

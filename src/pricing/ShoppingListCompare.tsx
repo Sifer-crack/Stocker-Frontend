@@ -169,7 +169,17 @@ function CompareResults({ outcome }: { outcome: CompareOutcome }) {
   }
 
   const cheapest = data.storeTotals.find((storeTotal) => normChain(storeTotal.chainId) === normChain(data.cheapestChainId))
-  const shelfCheapest = data.storeTotals.reduce((best, current) => (current.totalAmount < best.totalAmount ? current : best))
+  // The backend measures savings against 0 when the picked chain is not in the results (e.g. filtered out by
+  // the method), which would show every chain as costing its whole total more. Show no savings then.
+  const baselineMissing =
+    picked !== '' && !data.storeTotals.some((storeTotal) => normChain(storeTotal.chainId) === picked)
+  // Only chains with the best coverage can be compared on items: a chain with nothing priced has a total of 0.
+  const bestCoverage = Math.max(...data.storeTotals.map((storeTotal) => storeTotal.itemsPriced))
+  const comparable = data.storeTotals.filter((storeTotal) => storeTotal.itemsPriced === bestCoverage && bestCoverage > 0)
+  const shelfCheapest =
+    comparable.length > 1
+      ? comparable.reduce((best, current) => (current.totalAmount < best.totalAmount ? current : best))
+      : null
   const leftOut = outcome.allowedMethods.length > 0
     ? CHAINS.filter((chain) => !data.storeTotals.some((storeTotal) => normChain(storeTotal.chainId) === normChain(chain.id)))
     : []
@@ -228,7 +238,7 @@ function CompareResults({ outcome }: { outcome: CompareOutcome }) {
                     {storeTotal.itemsPriced} of {outcome.requestedCount}
                   </td>
                   <td>{unavailable.length > 0 ? unavailable.join(', ') : '—'}</td>
-                  <td>{savingsText(storeTotal)}</td>
+                  <td>{baselineMissing ? '—' : savingsText(storeTotal)}</td>
                 </tr>
               )
             })}
@@ -241,7 +251,7 @@ function CompareResults({ outcome }: { outcome: CompareOutcome }) {
           Cheapest including delivery/collection: <strong>{chainLabel(cheapest.chainId)}</strong>
           {cheapest.bestMethod && <> via {methodLabel(cheapest.bestMethod).toLowerCase()}</>} (
           {formatPrice(cheapest.totalWithFulfilment, cheapest.currency)}).
-          {normChain(shelfCheapest.chainId) !== normChain(cheapest.chainId) && (
+          {shelfCheapest !== null && normChain(shelfCheapest.chainId) !== normChain(cheapest.chainId) && (
             <>
               {' '}
               {chainLabel(shelfCheapest.chainId)} has the cheapest items, but fees make {chainLabel(cheapest.chainId)}{' '}
@@ -254,8 +264,9 @@ function CompareResults({ outcome }: { outcome: CompareOutcome }) {
         </p>
       )}
       <p className="pricing-empty">
-        Savings are measured against {chainLabel(data.selectedChainId)}{' '}
-        {outcome.pickedChainId ? '(your pick)' : '(the cheapest supermarket)'}.
+        {baselineMissing
+          ? `Savings are not shown: ${chainLabel(outcome.pickedChainId)} doesn't offer the method(s) you chose.`
+          : `Savings are measured against ${chainLabel(data.selectedChainId)} ${outcome.pickedChainId ? '(your pick)' : '(the cheapest supermarket)'}.`}
       </p>
       {leftOut.length > 0 && (
         <p className="pricing-empty">

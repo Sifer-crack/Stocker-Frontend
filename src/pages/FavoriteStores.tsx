@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useShoppingList } from '../context/ShoppingListContext'
@@ -27,6 +27,12 @@ function listName(product: StoreProduct): string {
 
 function FavoriteStores() {
   const { accessToken } = useAuth()
+  // Read the token from a ref so a silent refresh does not refetch the pages' data.
+  const tokenRef = useRef(accessToken)
+  useLayoutEffect(() => {
+    tokenRef.current = accessToken
+  })
+  const signedIn = accessToken !== null
   const { items, addItem } = useShoppingList()
   const [favorites, setFavorites] = useState<FavoriteStore[]>([])
   const [loadingFavorites, setLoadingFavorites] = useState(true)
@@ -45,7 +51,7 @@ function FavoriteStores() {
 
   useEffect(() => {
     const controller = new AbortController()
-    listFavoriteStores(accessToken, controller.signal)
+    listFavoriteStores(tokenRef.current, controller.signal)
       .then((saved) => {
         setFavorites(saved)
         setSelectedId((current) => current ?? saved[0]?.id ?? null)
@@ -57,7 +63,7 @@ function FavoriteStores() {
         if (!controller.signal.aborted) setLoadingFavorites(false)
       })
     return () => controller.abort()
-  }, [accessToken])
+  }, [signedIn])
 
   const selectedChainId = selected?.chainId ?? null
   useEffect(() => {
@@ -65,7 +71,7 @@ function FavoriteStores() {
     const controller = new AbortController()
     setLoadingProducts(true)
     setError(null)
-    listStoreProducts(selectedChainId, appliedQuery, accessToken, controller.signal)
+    listStoreProducts(selectedChainId, appliedQuery, tokenRef.current, controller.signal)
       .then(setProducts)
       .catch((err: unknown) => {
         if (controller.signal.aborted) return
@@ -76,7 +82,7 @@ function FavoriteStores() {
         if (!controller.signal.aborted) setLoadingProducts(false)
       })
     return () => controller.abort()
-  }, [selectedChainId, appliedQuery, accessToken])
+  }, [selectedChainId, appliedQuery])
 
   async function handleAddFavorite() {
     if (!chainToAdd) return

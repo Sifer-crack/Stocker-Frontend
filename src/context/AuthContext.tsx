@@ -14,6 +14,7 @@ import {
 /** Refresh this long before the access token expires. */
 const REFRESH_MARGIN_SECONDS = 60
 const MIN_REFRESH_DELAY_SECONDS = 10
+const RETRY_AFTER_ERROR_SECONDS = 30
 
 interface AuthContextType {
   accessToken: string | null
@@ -50,13 +51,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Refresh a little before the 15 minute access token runs out, so calls, polling and the live stream keep working.
   useEffect(() => {
     if (accessToken === null) return
-    const delaySeconds = Math.max(expiresIn - REFRESH_MARGIN_SECONDS, MIN_REFRESH_DELAY_SECONDS)
-    const timer = setTimeout(() => {
-      void refreshSession().then((tokens) => {
-        if (tokens === null) setAccessToken(null)
-      })
-    }, delaySeconds * 1000)
-    return () => clearTimeout(timer)
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout>
+
+    const refreshLater = (delaySeconds: number) => {
+      timer = setTimeout(async () => {
+        const result = await refreshSession()
+        if (cancelled) return
+        if (result.status === 'denied') {
+          setLatestToken(null)
+          setAccessToken(null)
+        } else if (result.status === 'error') {
+          // A network blip must not end the session: try again shortly.
+          refreshLater(RETRY_AFTER_ERROR_SECONDS)
+        }
+        // On success the listener above stores the new token, which reschedules this effect.
+      }, delaySeconds * 1000)
+    }
+
+    refreshLater(Math.max(expiresIn - REFRESH_MARGIN_SECONDS, MIN_REFRESH_DELAY_SECONDS))
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
   }, [accessToken, expiresIn])
 
   const login = async (email: string, password: string): Promise<void> => {

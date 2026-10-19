@@ -19,7 +19,7 @@ function expiryText(isoDate: string): string {
 
 function Notifications() {
   const { notifications, productNames, loading, error, acknowledge } = useNotifications()
-  const [actionError, setActionError] = useState('')
+  const [rowError, setRowError] = useState<{ id: string; message: string } | null>(null)
 
   const ordered = [...notifications].sort(
     (a, b) => Number(a.status === 'ACKNOWLEDGED') - Number(b.status === 'ACKNOWLEDGED') || a.expirationDate.localeCompare(b.expirationDate),
@@ -27,10 +27,13 @@ function Notifications() {
 
   const handleAcknowledge = async (notification: ExpiryNotification) => {
     try {
-      setActionError('')
+      setRowError(null)
       await acknowledge(notification.id)
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Could not acknowledge this notification.')
+      setRowError({
+        id: notification.id,
+        message: err instanceof Error ? err.message : 'Could not acknowledge this notification.',
+      })
     }
   }
 
@@ -44,7 +47,7 @@ function Notifications() {
       </header>
 
       <div className="notifications-body">
-        {(error || actionError) && <p className="pricing-error">{actionError || error}</p>}
+        {error && <p className="pricing-error">{error}</p>}
 
         <section className="shopping-list-card">
           {loading && notifications.length === 0 ? (
@@ -65,6 +68,7 @@ function Notifications() {
                         {expiryText(notification.expirationDate)} ·{' '}
                         {new Date(`${notification.expirationDate}T00:00:00`).toLocaleDateString()}
                       </p>
+                      {rowError?.id === notification.id && <p className="pricing-error">{rowError.message}</p>}
                     </div>
                   </div>
 

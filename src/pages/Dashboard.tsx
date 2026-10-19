@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useUser } from '../context/UserContext'
@@ -17,6 +17,10 @@ function Dashboard({
   const navigate = useNavigate()
   const { user } = useUser()
   const { accessToken } = useAuth()
+  const tokenRef = useRef(accessToken)
+  useLayoutEffect(() => {
+    tokenRef.current = accessToken
+  })
   const weeklyBudget = user?.groceryBudget ?? 0
   const [pantryCount, setPantryCount] = useState(0)
   const [lowStockCount, setLowStockCount] = useState(0)
@@ -30,7 +34,7 @@ function Dashboard({
 
     const loadPantrySummary = async () => {
       try {
-        const pantryItems = await listPantry(user.id, accessToken)
+        const pantryItems = await listPantry(user.id, tokenRef.current)
 
         setPantryCount(pantryItems.length)
         setLowStockCount(
@@ -42,7 +46,7 @@ function Dashboard({
     }
 
     loadPantrySummary()
-  }, [user, accessToken])
+  }, [user])
 
   const handleCreateShoppingList = () => navigate('/shopping-list')
   const handleViewPantry = () => navigate('/pantry')
