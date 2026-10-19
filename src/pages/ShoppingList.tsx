@@ -306,12 +306,19 @@ function ShoppingList() {
 
                     <button
                       type="button"
+                      // Keeps the input focused, so its blur doesn't cancel the edit before this click saves it.
+                      onMouseDown={(event) => event.preventDefault()}
                       onClick={() => {
-                        setEditName(item.name)
-                        setEditingId(item.id)
+                        if (editingId === item.id) {
+                          renameItem(item.id, editName)
+                          setEditingId(null)
+                        } else {
+                          setEditName(item.name)
+                          setEditingId(item.id)
+                        }
                       }}
                     >
-                      Rename
+                      {editingId === item.id ? 'Save' : 'Rename'}
                     </button>
 
                     <button

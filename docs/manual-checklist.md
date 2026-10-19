@@ -38,7 +38,7 @@ backend stack (`integration/sprint2-manual-test`, see `docs/MANUAL_TESTING.md` i
 - [ ] Cancel (and typing again) stops a running price search and clears the results.
 - [ ] Free-text items: in Pantry, typing "Tim Tams" and picking 'Add "Tim Tams" as a new item' adds it with no catalog entry; Add Item in the Pantry search bar prefills the form; on the shopping list the same option adds an uncatalogued item; Complete Shopping puts it in the pantry by name.
 - [ ] Shopping-list search suggestions come from `/api/pricing/suggest` (items supermarkets stock, e.g. "Cooking wine"), show "at N stores", and focusing the empty box lists the most widely stocked products; typing quickly only keeps the last request.
-- [ ] Rename on the shopping list: Rename turns the name into an input; Enter saves (the item is priced again under the new name, keeps its quantity and ticked state), Escape or clicking away cancels; renaming to an existing item name does not create a duplicate.
+- [ ] Rename on the shopping list: Rename turns the name into an input (the button becomes Save); Enter or Save saves (the item is priced again under the new name, keeps its quantity and ticked state), Escape or clicking away cancels; renaming to an existing item name does not create a duplicate.
 - [ ] Compare: totals, items priced of N, unavailable item names, cheapest marked, savings positive/zero/negative.
 - [ ] Unsupported region shows the exact 422 message; no crash.
 - [ ] Picking a "compare savings against" store changes the baseline (needs the lower-case fix).
