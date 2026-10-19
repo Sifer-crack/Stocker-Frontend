@@ -19,6 +19,12 @@ function favoriteLabel(favorite: FavoriteStore): string {
   return favorite.storeId ? `${chainLabel(favorite.chainId)} · ${favorite.storeId}` : chainLabel(favorite.chainId)
 }
 
+/** Pricing searches on the name, so keep the pack size in it when the product name leaves it out. */
+function listName(product: StoreProduct): string {
+  const size = product.packSize
+  return size && !product.name.toLowerCase().includes(size.toLowerCase()) ? `${product.name} ${size}` : product.name
+}
+
 function FavoriteStores() {
   const { accessToken } = useAuth()
   const { items, addItem } = useShoppingList()
@@ -175,7 +181,7 @@ function FavoriteStores() {
               <p className="pricing-empty">
                 {appliedQuery
                   ? `No stored products match “${appliedQuery}” at ${chainLabel(selected.chainId)}.`
-                  : `No stored products for ${chainLabel(selected.chainId)} yet, we'll keep looking.`}
+                  : `Nothing stored for ${chainLabel(selected.chainId)} yet, we'll keep looking.`}
               </p>
             ) : (
               <div className="pricing-table-wrap">
@@ -205,10 +211,10 @@ function FavoriteStores() {
                           <button
                             type="button"
                             className="favorite-add-btn"
-                            onClick={() => addItem(product.name)}
-                            disabled={onList(product.name)}
+                            onClick={() => addItem(listName(product))}
+                            disabled={onList(listName(product))}
                           >
-                            {onList(product.name) ? 'On your list' : 'Add to list'}
+                            {onList(listName(product)) ? 'On your list' : 'Add to list'}
                           </button>
                         </td>
                       </tr>

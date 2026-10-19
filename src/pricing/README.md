@@ -41,6 +41,7 @@ src/pricing/
 ├── PricingTable.css         # table/error styles shared by every pricing view
 ├── matchPolling.ts          # matchItem + capped retries while empty (3x) or stale (2x)
 ├── PriceSearch.tsx          # /pricing "Look up a product": type a name, get one row per chain
+├── fulfilment.ts            # labels and text for fulfilment methods, fees and (possibly negative) savings
 ├── ShoppingListCompare.tsx  # /pricing "Compare my shopping list": the real list, region, savings baseline
 ├── PricingPage.tsx          # /pricing: the two cards above
 ├── PricingPage.css
@@ -67,8 +68,11 @@ All calls need the gateway JWT (`Authorization: Bearer <accessToken>`, added by 
 - `GET /api/notifications`, `POST /api/notifications/{id}/acknowledge` (`status: "NEW" | "ACKNOWLEDGED"`).
 - `GET /api/pricing/search?term=&itemId=&storeUrls=&category=` -> `{ priceRecords: [...] }`, sorted
   ascending by price.
-- `POST /api/pricing/compare` with `{ items: [{itemId, quantity}], region, selectedChainId }` ->
-  `{ storeTotals: [...], cheapestChainId, selectedChainId }`. Returns HTTP 422 with `{ error }` when the
+- `POST /api/pricing/compare` with `{ items: [{itemId, quantity}], region, selectedChainId, allowedMethods? }` ->
+  `{ storeTotals: [...], cheapestChainId, selectedChainId }`. Each `storeTotals[]` entry also has
+  `totalWithFulfilment`, `bestMethod`, `fulfilmentCost` and `fulfilmentOptions` (delivery / click and collect; a
+  chain offering none of the allowed methods is omitted, so the list can be empty). `selectedChainId` is sent lower
+  case (see `normChain`). Returns HTTP 422 with `{ error }` when the
   request is outside the supported service area or has no items.
 
 Errors are `{ error }` with a non-2xx status. See

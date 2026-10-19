@@ -36,9 +36,8 @@ The gateway address is resolved in `src/lib/apiConfig.ts`: container env `API_BA
 build-time `VITE_API_BASE_URL` > `http://localhost:8080`. The page origin must be listed in the gateway's
 `STOCKER_CORS_ALLOWED_ORIGINS`.
 
-Known gaps: the Pantry and Dashboard pages still call the inventory (`:8087`) and catalog (`:8082`) services
-directly on `localhost`; the backend has no delete or check-off for shopping items, so those are remembered in
-this browser only.
+Known gaps: the backend has no delete or check-off for shopping items, so those are remembered in this browser
+only; inventory trusts the `userId` the page sends.
 
 ## Docker
 
