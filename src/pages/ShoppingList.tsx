@@ -55,6 +55,7 @@ function ShoppingList({
   const [itemName, setItemName] = useState('')
   const [completedItems, setCompletedItems] = useState<number[]>([])
   const [completionMessage, setCompletionMessage] = useState('')
+  const [groupByCategory, setGroupByCategory] = useState(false)
   const productSearchRef = useRef<HTMLDivElement>(null)
 
   const [selectedProduct, setSelectedProduct] =
@@ -136,13 +137,40 @@ useEffect(() => {
     setApiError('')
 
     try {
-      const loadedItems = await fetchShoppingList(
-        user.id,
-        controller.signal,
+      const loadedItems = await fetchShoppingList(user.id, controller.signal)
+
+      const itemsWithCategories = await Promise.all(
+          loadedItems.map(async (item) => {
+            try {
+              const response = await fetch(
+                  `http://localhost:8082/products/${item.productId}`,
+                  { signal: controller.signal }
+              )
+
+              if (!response.ok) {
+                return { ...item, category: null }
+              }
+
+              const product: ProductApiItem = await response.json()
+
+              return {
+                ...item,
+                category: product.groceryType,
+              }
+            } catch (error) {
+              if (error instanceof Error && error.name === 'AbortError') {
+                throw error
+              }
+
+              console.error(`Unable to load category for ${item.name}:`, error)
+
+              return { ...item, category: null }
+            }
+          })
       )
 
       if (!controller.signal.aborted) {
-        setItems(loadedItems)
+        setItems(itemsWithCategories)
       }
     } catch (error) {
       if (
@@ -362,6 +390,33 @@ const completeShopping = async () => {
     return itemPrices[item.name.toLowerCase()] ?? 5.00
   }
 
+  const groupedShoppingItems = items.reduce<Record<string, ShoppingItem[]>>(
+      (groups, item) => {
+        const category = item.category?.trim() || 'Uncategorised'
+
+        if (!groups[category]) {
+          groups[category] = []
+        }
+
+        groups[category].push(item)
+
+        return groups
+      },
+      {}
+  )
+
+  const sortedShoppingCategories = Object.keys(groupedShoppingItems).sort(
+      (a, b) => a.localeCompare(b)
+  )
+
+  Object.values(groupedShoppingItems).forEach((categoryItems) => {
+    categoryItems.sort((a, b) => a.name.localeCompare(b.name))
+  })
+
+  const sortedShoppingItems = [...items].sort((a, b) =>
+      a.name.localeCompare(b.name)
+  )
+
   const estimatedCost = items.reduce(
     (total, item) => total + getItemPrice(item) * (item.quantity ?? 1),
     0
@@ -434,6 +489,16 @@ const completeShopping = async () => {
         </header>
         <div className="shopping-content">
           <section className="shopping-list-card">
+            <div className="shopping-list-toolbar">
+              <button
+              type="button"
+              className="shopping-view-toggle-button"
+              onClick={() => setGroupByCategory(!groupByCategory)}
+              >
+                {groupByCategory ? 'Sort Alphabetically' : 'Group by Category'}
+              </button>
+            </div>
+
             {isLoading ? (
                 <p className="empty-list">Loading shopping list...</p>
             ) : apiError ? (
@@ -442,37 +507,96 @@ const completeShopping = async () => {
                 </p>
             ) : items.length === 0 ? (
                 <p className="empty-list">No items added yet.</p>
+            ) : groupByCategory ? (
+                <div className="shopping-grouped-list">
+                  {sortedShoppingCategories.map((category) => (
+                      <div key={category} className="shopping-category-group">
+                        <h3 className="shopping-category-heading">
+                          {category}
+                        </h3>
+
+                        <ul className="shopping-items">
+                          {groupedShoppingItems[category].map((item) => {
+                            const index = items.indexOf(item)
+                            const isCompleted = completedItems.includes(index)
+
+                            return (
+                                <li
+                                    key={item.shoppingListItemId ?? `${item.productId}-${index}`}
+                                    className="shopping-item"
+                                >
+                                  <div className="shopping-item-info">
+                                    <button
+                                        type="button"
+                                        className={`item-checkbox ${isCompleted ? 'completed' : ''}`}
+                                        onClick={() => toggleCompleted(index)}
+                                        aria-label={`Mark ${item.name} as ${isCompleted ? 'not completed' : 'completed'}`}
+                                    />
+
+                                    <div>
+                                      <strong>{item.name}</strong>
+                                      <p>Qty {item.quantity ?? 1}</p>
+                                    </div>
+                                  </div>
+
+                                  <div className="shopping-item-actions">
+                  <span>
+                    Est. ${(getItemPrice(item) * (item.quantity ?? 1)).toFixed(2)}
+                  </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeItem(index)}
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                </li>
+                            )
+                          })}
+                        </ul>
+                      </div>
+                  ))}
+                </div>
             ) : (
                 <ul className="shopping-items">
-                  {items.map((item, index) => (
-                      <li key={index} className="shopping-item">
-                        <div className="shopping-item-info">
-                          <button
-                              type="button"
-                              className={`item-checkbox ${completedItems.includes(index) ? 'completed' : ''}`}
-                              onClick={() => toggleCompleted(index)}
-                              aria-label={`Mark ${item.name} as ${completedItems.includes(index) ? 'not completed' : 'completed'}`}/>
+                  {sortedShoppingItems.map((item) => {
+                    const index = items.indexOf(item)
+                    const isCompleted = completedItems.includes(index)
 
-                          <div>
-                            <strong>{item.name}</strong>
-                            <p>Qty {item.quantity ?? 1}</p>
+                    return (
+                        <li
+                            key={item.shoppingListItemId ?? `${item.productId}-${index}`}
+                            className="shopping-item"
+                        >
+                          <div className="shopping-item-info">
+                            <button
+                                type="button"
+                                className={`item-checkbox ${isCompleted ? 'completed' : ''}`}
+                                onClick={() => toggleCompleted(index)}
+                                aria-label={`Mark ${item.name} as ${isCompleted ? 'not completed' : 'completed'}`}
+                            />
+
+                            <div>
+                              <strong>{item.name}</strong>
+                              <p>Qty {item.quantity ?? 1}</p>
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="shopping-item-actions">
-                                      <span>
-                                          Est. ${(getItemPrice(item) * (item.quantity ?? 1)).toFixed(2)}
-                                      </span>
+                          <div className="shopping-item-actions">
+            <span>
+              Est. ${(getItemPrice(item) * (item.quantity ?? 1)).toFixed(2)}
+            </span>
 
-                          <button
-                              type="button"
-                              onClick={() => removeItem(index)}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </li>
-                  ))}
+                            <button
+                                type="button"
+                                onClick={() => removeItem(index)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </li>
+                    )
+                  })}
                 </ul>
             )}
           </section>
