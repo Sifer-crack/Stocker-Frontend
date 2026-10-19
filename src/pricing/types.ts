@@ -127,3 +127,18 @@ export interface ProductSearchResponse {
   /** Genuinely different products of the same category, at most 5. */
   alternatives: ProductView[]
 }
+
+/** One search-bar suggestion from `GET /api/pricing/suggest` (what supermarkets actually stock). */
+export interface ProductSuggestion {
+  text: string
+  canonicalKey: string | null
+  chainCount: number
+  chains: string[]
+  sampleSize: string | null
+  productCount: number
+}
+
+export interface ProductSuggestResponse {
+  q: string
+  suggestions: ProductSuggestion[]
+}

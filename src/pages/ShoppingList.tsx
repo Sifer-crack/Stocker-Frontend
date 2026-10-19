@@ -5,7 +5,6 @@ import { useShoppingList } from '../context/ShoppingListContext'
 import type { ItemPrices, ShoppingItem } from '../context/ShoppingListContext'
 import { useUser } from '../context/UserContext'
 import { addPantryItem, searchProducts } from '../lib/pantryApi'
-import type { ProductApiItem } from '../lib/pantryApi'
 import {
   fetchSpendingReport,
   formatReportDateKey,
@@ -14,21 +13,13 @@ import {
 } from '../lib/spendingReport'
 import { chainLabel } from '../pricing/chains.ts'
 import { formatPrice } from '../pricing/format.ts'
+import { fetchSuggestions } from '../pricing/productsApi.ts'
+import type { ProductSuggestion } from '../pricing/types.ts'
 import '../pricing/PricingTable.css'
 import './ShoppingList.css'
 
 /** After this long without a comparison, "Fetching prices…" would be misleading: the backend may be waiting for a later push. */
 const STILL_LOOKING_AFTER_MS = 2 * 60 * 1000
-
-const getProductSize = (product: ProductApiItem): string => {
-  if (product.sellingWeightKg != null) return `${product.sellingWeightKg} kg`
-  if (product.sellingVolumeL != null) return `${product.sellingVolumeL} L`
-  return ''
-}
-
-/** The text the price engine searches for: the size is read from the term, so it is appended compactly ("Milk 2L"). */
-const searchTerm = (product: ProductApiItem): string =>
-  `${product.productName} ${getProductSize(product).replace(' ', '')}`.trim()
 
 const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
 
@@ -63,30 +54,24 @@ function ShoppingList() {
   const { items, prices, estimatedCost, addItem, removeItem, toggleCompleted, error, loaded } = useShoppingList()
   const weeklyBudget = user?.groceryBudget ?? 0
   const [itemName, setItemName] = useState('')
-  const [selectedProduct, setSelectedProduct] = useState<ProductApiItem | null>(null)
-  const [suggestions, setSuggestions] = useState<ProductApiItem[]>([])
+  const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
   const [completionMessage, setCompletionMessage] = useState('')
   const [completing, setCompleting] = useState(false)
   const productSearchRef = useRef<HTMLDivElement>(null)
   const tokenRef = useRef(accessToken)
-  const pickedIds = useRef(new Map<string, string>())
   useLayoutEffect(() => {
     tokenRef.current = accessToken
   })
 
   useEffect(() => {
-    const query = itemName.trim()
-    if (query.length < 2 || selectedProduct) {
-      setSuggestions([])
-      return
-    }
+    if (!menuOpen) return
     const controller = new AbortController()
-    // A short pause so each keystroke doesn't hit the catalog.
+    // A short pause so each keystroke doesn't hit the gateway; the previous request is aborted.
     const timer = window.setTimeout(() => {
-      searchProducts(query, tokenRef.current, controller.signal)
-        .then((products) => {
-          if (!controller.signal.aborted) setSuggestions(products)
+      fetchSuggestions(itemName.trim(), tokenRef.current, controller.signal)
+        .then((found) => {
+          if (!controller.signal.aborted) setSuggestions(found)
         })
         .catch(() => {
           if (!controller.signal.aborted) setSuggestions([])
@@ -96,7 +81,7 @@ function ShoppingList() {
       controller.abort()
       window.clearTimeout(timer)
     }
-  }, [itemName, selectedProduct])
+  }, [itemName, menuOpen])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -109,24 +94,20 @@ function ShoppingList() {
   }, [])
 
   const handleAddItem = () => {
-    const text = selectedProduct ? searchTerm(selectedProduct) : itemName.trim()
+    const text = itemName.trim()
     if (text === '') {
       return
     }
-    if (selectedProduct) pickedIds.current.set(text.toLowerCase(), selectedProduct.productId)
     addItem(text)
     setItemName('')
-    setSelectedProduct(null)
     setSuggestions([])
     setMenuOpen(false)
   }
 
-  /** The catalog product behind a list item, so buying it can update the pantry. Items typed freely may have none. */
+  /** The catalog product behind a list item, so buying it can update the pantry. Most items have none and go in by name. */
   const findProductId = async (name: string): Promise<string | null> => {
-    const picked = pickedIds.current.get(name.toLowerCase())
-    if (picked) return picked
     const matches = await searchProducts(name, tokenRef.current)
-    const exact = matches.find((p) => sameName(p.productName, name) || sameName(searchTerm(p), name))
+    const exact = matches.find((p) => sameName(p.productName, name))
     return exact?.productId ?? null
   }
 
@@ -214,13 +195,13 @@ function ShoppingList() {
           <div className="shopping-product-search" ref={productSearchRef}>
             <input
               type="text"
-              placeholder="Find a product, or type any item..."
+              placeholder="Search products, or type any item..."
               value={itemName}
               onChange={(event) => {
                 setItemName(event.target.value)
-                setSelectedProduct(null)
                 setMenuOpen(true)
               }}
+              onFocus={() => setMenuOpen(true)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') handleAddItem()
               }}
@@ -228,28 +209,31 @@ function ShoppingList() {
               aria-label="Add an item to the shopping list"
             />
 
-            {menuOpen && itemName.trim().length >= 2 && !selectedProduct && (
+            {menuOpen && (suggestions.length > 0 || itemName.trim() !== '') && (
               <div className="product-dropdown">
-                {suggestions.map((product) => (
+                {suggestions.map((suggestion) => (
                   <button
                     type="button"
-                    key={product.productId}
+                    key={suggestion.canonicalKey ?? suggestion.text}
                     className="product-dropdown-item"
                     onClick={() => {
-                      setSelectedProduct(product)
-                      const size = getProductSize(product)
-                      setItemName(size ? `${product.productName} - ${size}` : product.productName)
+                      setItemName(suggestion.text)
                       setSuggestions([])
                       setMenuOpen(false)
                     }}
                   >
-                    <span>{product.productName}</span>
-                    <span>{getProductSize(product)}</span>
+                    <span>{suggestion.text}</span>
+                    <span>
+                      {suggestion.sampleSize ? `${suggestion.sampleSize} · ` : ''}
+                      {suggestion.chainCount === 1 ? 'at 1 store' : `at ${suggestion.chainCount} stores`}
+                    </span>
                   </button>
                 ))}
-                <button type="button" className="product-dropdown-item" onClick={handleAddItem}>
-                  <span>Add &quot;{itemName.trim()}&quot; as a new item</span>
-                </button>
+                {itemName.trim() !== '' && (
+                  <button type="button" className="product-dropdown-item" onClick={handleAddItem}>
+                    <span>Add &quot;{itemName.trim()}&quot; as a new item</span>
+                  </button>
+                )}
               </div>
             )}
           </div>

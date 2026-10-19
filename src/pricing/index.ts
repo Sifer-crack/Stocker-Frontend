@@ -5,13 +5,15 @@ export { ProductComparisonTable } from './ProductComparisonTable.tsx'
 export { ProductResults } from './ProductResults.tsx'
 export { formatPrice, formatPerUnit } from './format.ts'
 export { searchPrices, compareShoppingList, PricingApiError } from './api.ts'
-export { fetchProducts, selectItemProduct } from './productsApi.ts'
+export { fetchProducts, fetchSuggestions, selectItemProduct } from './productsApi.ts'
 export { CHAINS, chainLabel } from './chains.ts'
 export type {
   ChainPrice,
   ProductView,
   ProductSearchResponse,
   ProductSearchStatus,
+  ProductSuggestion,
+  ProductSuggestResponse,
   RefreshState,
   MatchMethod,
   PriceRecord,

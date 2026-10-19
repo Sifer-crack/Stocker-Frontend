@@ -1,6 +1,6 @@
 import { API_BASE } from '../lib/apiConfig.ts'
 import { requestJson } from './api.ts'
-import type { ProductSearchResponse } from './types.ts'
+import type { ProductSearchResponse, ProductSuggestion, ProductSuggestResponse } from './types.ts'
 
 export interface ProductSearchParams {
   /** What the user typed, e.g. "eggs size 7"; size and grade qualifiers are read from it. */
@@ -30,4 +30,20 @@ export function selectItemProduct(itemId: string, productKey: string, accessToke
       body: JSON.stringify({ productKey }),
     },
   )
+}
+
+/** Search-bar suggestions; an empty or 1-char query returns the most widely stocked products, unknown text an empty list. */
+export async function fetchSuggestions(
+  q: string,
+  accessToken: string | null,
+  signal?: AbortSignal,
+  limit = 8,
+): Promise<ProductSuggestion[]> {
+  const query = new URLSearchParams({ q, limit: String(limit) })
+  const response = await requestJson<ProductSuggestResponse>(
+    `${API_BASE}/api/pricing/suggest?${query.toString()}`,
+    accessToken,
+    { signal },
+  )
+  return response.suggestions ?? []
 }

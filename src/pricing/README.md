@@ -39,7 +39,7 @@ src/pricing/
 ├── types.ts                 # request/response shapes matching the gateway's REST DTOs
 ├── chains.ts                # supported chains (id + label), normChain()
 ├── format.ts                # formatPrice(), formatPerUnit()
-├── productsApi.ts           # GET /api/pricing/products and PUT /api/pricing/items/{id}/product
+├── productsApi.ts           # GET /api/pricing/products, PUT .../items/{id}/product, GET /api/pricing/suggest
 ├── productPolling.ts        # re-asks every 2.5 s while a page load is pending (max 10), abortable
 ├── products.ts              # cheapest chain / price helpers
 ├── ProductComparisonTable.tsx # products x chains table (optional "Use this one" column)
