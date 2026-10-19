@@ -2,9 +2,12 @@ import { fetchProducts } from './productsApi.ts'
 import type { ProductSearchParams } from './productsApi.ts'
 import type { ProductSearchResponse } from './types.ts'
 
-/** Re-asking is cheap and starts no supermarket request while a page load is pending, so poll briskly but not forever. */
+/**
+ * Re-asking is cheap and starts no supermarket request while a page load is pending, so poll briskly. A supermarket
+ * can take a minute or more to load, so keep going for about three minutes before giving up.
+ */
 export const REASK_DELAY_MS = 2500
-export const MAX_REASKS = 10
+export const MAX_REASKS = 70
 
 /** True while the backend is still loading a supermarket page for this search. */
 export function shouldReask(response: ProductSearchResponse): boolean {

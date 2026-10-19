@@ -10,7 +10,7 @@ import { CHAINS } from './chains.ts'
 
 const REFRESH_TEXT: Record<RefreshState, string> = {
   pending: 'checking…',
-  done: 'checked',
+  done: 'done',
   failed: "couldn't load",
   skipped: 'not checked',
 }
@@ -53,12 +53,18 @@ export function ProductResults({ response, searching, term, onSelect, selectedKe
   const cheapest = cheapestOverall(products)
   const alternativesOnly = status === 'alternatives-only'
   const alternativesVisible = alternatives.length > 0 && (alternativesOnly || showAlternatives)
-  const waiting = status === 'refreshing' || (searching && Object.values(response.refresh).includes('pending'))
+  const stillPending = status === 'refreshing' || Object.values(response.refresh).includes('pending')
+  // Only "waiting" while we are actually still asking; once polling has stopped, say so rather than show a stuck spinner.
+  const waiting = searching && stillPending
+  const gaveUp = !searching && stillPending
 
   return (
     <>
       {waiting && <p className="pricing-empty">Checking the supermarkets… prices appear as each one answers.</p>}
-      {(waiting || response.status === 'not-found') && <RefreshChips refresh={response.refresh} />}
+      {gaveUp && (
+        <p className="pricing-empty">Some supermarkets are taking longer than usual. Search again in a moment to see them.</p>
+      )}
+      <RefreshChips refresh={response.refresh} />
 
       {status === 'not-found' && (
         <p className="pricing-empty">Nothing found at any supermarket for “{term}”. Try different wording.</p>
