@@ -16,6 +16,8 @@ export interface SseOptions {
   /** Called each time a connection is established (response headers received), before any event. */
   onOpen: () => void
   onEvent: (event: string, data: string) => void
+  /** Called after each failed connection attempt with the number of failures in a row (reset on success). */
+  onFailure?: (consecutiveFailures: number) => void
   signal: AbortSignal
 }
 
@@ -54,7 +56,7 @@ function parseBlock(block: string): { event: string; data: string } | null {
 }
 
 /** Runs until `signal` aborts: connects, reads events, and reconnects with capped exponential backoff. */
-export async function runSse({ url, getToken, onOpen, onEvent, signal }: SseOptions): Promise<void> {
+export async function runSse({ url, getToken, onOpen, onEvent, onFailure, signal }: SseOptions): Promise<void> {
   let failures = 0
 
   while (!signal.aborted) {
@@ -121,6 +123,7 @@ export async function runSse({ url, getToken, onOpen, onEvent, signal }: SseOpti
     if (signal.aborted) return
     const delay = Math.min(BACKOFF_MAX_MS, BACKOFF_BASE_MS * 2 ** failures) * (0.5 + Math.random() / 2)
     failures++
+    onFailure?.(failures)
     await wait(delay, signal)
   }
 }

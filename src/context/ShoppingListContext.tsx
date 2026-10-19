@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useAuth } from './AuthContext'
 import { useUser } from './UserContext'
@@ -54,6 +54,8 @@ interface ShoppingListContextType {
   refreshItem: (id: string) => void
   /** The last problem talking to the server, or '' when all is well. */
   error: string
+  /** True once the list has been fetched at least once (successfully or not), so "empty" can be trusted. */
+  loaded: boolean
 }
 
 const ShoppingListContext = createContext<ShoppingListContextType | undefined>(undefined)
@@ -132,6 +134,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   const [details, setDetails] = useState<Record<string, ItemDetail>>({})
   const [overlayState, setOverlayState] = useState(() => ({ userId, overlay: readOverlay(userId) }))
   const [error, setError] = useState('')
+  const [loadedFor, setLoadedFor] = useState<string | null>(null)
   if (overlayState.userId !== userId) {
     // Different user (login, logout, or the profile finishing loading): swap in that user's overlay.
     setOverlayState({ userId, overlay: readOverlay(userId) })
@@ -144,8 +147,11 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   const itemsRef = useRef(serverItems)
   const userIdRef = useRef(userId)
   const controllers = useRef(new Map<string, AbortController>())
+  const adding = useRef(new Set<string>())
 
-  useEffect(() => {
+  // A layout effect runs before every passive effect, including a child page's (e.g. the item page asking for
+  // its detail right after the list arrives), so refs are never stale when those effects read them.
+  useLayoutEffect(() => {
     tokenRef.current = accessToken
     itemsRef.current = serverItems
     userIdRef.current = userId
@@ -171,13 +177,21 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
         setError('')
       } catch (err) {
         if (!controller.signal.aborted) setError(toMessage(err, 'Could not load your shopping list.'))
+      } finally {
+        if (!controller.signal.aborted) setLoadedFor(userId)
       }
     }
+
+    // Fetch straight away as well as on every stream open: the list must load even if the stream never does.
+    void refetch()
 
     void runSse({
       url: `${API_BASE}/api/updates/shopping`,
       getToken: () => tokenRef.current,
       onOpen: () => void refetch(),
+      onFailure: (failures) => {
+        if (failures >= 3) setError('Live price updates are unavailable right now. Reconnecting…')
+      },
       onEvent: (event, data) => {
         if (event !== 'shopping-item-updated') return
         const update = parseShoppingItemUpdate(data)
@@ -227,6 +241,9 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     const name = rawName.trim()
     // Without a user there is no list to add to: it would be swapped out when the profile loads.
     if (name === '' || userIdRef.current === null) return
+    // The backend cannot delete, so a double click must not create a second server item.
+    const key = name.toLowerCase()
+    if (adding.current.has(key)) return
     const existing = Object.values(itemsRef.current).find((item) => item.name.toLowerCase() === name.toLowerCase())
     if (existing) {
       // Re-adding something hidden locally brings it back rather than creating a duplicate on the server.
@@ -237,12 +254,14 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    adding.current.add(key)
     addShoppingItem({ name, quantity: 1 }, tokenRef.current)
       .then((created) => {
         setServerItems((current) => mergeItem(current, created))
         setError('')
       })
       .catch((err: unknown) => setError(toMessage(err, 'Could not add that item.')))
+      .finally(() => adding.current.delete(key))
   }, [])
 
   const removeItem = useCallback((id: string) => {
@@ -333,8 +352,19 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
   )
 
   const value = useMemo<ShoppingListContextType>(
-    () => ({ items, prices, details, estimatedCost, addItem, removeItem, toggleCompleted, refreshItem, error }),
-    [items, prices, details, estimatedCost, addItem, removeItem, toggleCompleted, refreshItem, error],
+    () => ({
+      items,
+      prices,
+      details,
+      estimatedCost,
+      addItem,
+      removeItem,
+      toggleCompleted,
+      refreshItem,
+      error,
+      loaded: loadedFor !== null && loadedFor === userId,
+    }),
+    [items, prices, details, estimatedCost, addItem, removeItem, toggleCompleted, refreshItem, error, loadedFor, userId],
   )
 
   return <ShoppingListContext.Provider value={value}>{children}</ShoppingListContext.Provider>

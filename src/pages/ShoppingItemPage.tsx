@@ -13,7 +13,7 @@ function ShoppingItemPage() {
   const { itemId } = useParams()
   const navigate = useNavigate()
   const { loading: userLoading } = useUser()
-  const { items, prices, details, removeItem, refreshItem } = useShoppingList()
+  const { items, prices, details, removeItem, refreshItem, loaded } = useShoppingList()
 
   const item = items.find((candidate) => candidate.id === itemId)
   const hasItem = item !== undefined
@@ -29,8 +29,8 @@ function ShoppingItemPage() {
       <main className="shopping-page">
         <header className="shopping-header">
           <div>
-            <h1>{userLoading ? 'Loading…' : 'Item not found'}</h1>
-            {!userLoading && <p>This item is not on your shopping list any more.</p>}
+            <h1>{userLoading || !loaded ? 'Loading…' : 'Item not found'}</h1>
+            {!userLoading && loaded && <p>This item is not on your shopping list any more.</p>}
           </div>
           <div className="shopping-header-actions">
             <Link to="/shopping-list" className="item-compare-link">

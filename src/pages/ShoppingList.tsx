@@ -38,7 +38,7 @@ function ItemPriceCell({ item, prices }: { item: ShoppingItem; prices: ItemPrice
 function ShoppingList() {
   const navigate = useNavigate()
   const { user } = useUser()
-  const { items, prices, estimatedCost, addItem, removeItem, toggleCompleted, error } = useShoppingList()
+  const { items, prices, estimatedCost, addItem, removeItem, toggleCompleted, error, loaded } = useShoppingList()
   const weeklyBudget = user?.groceryBudget ?? 0
   const [itemName, setItemName] = useState('')
 
@@ -84,7 +84,7 @@ function ShoppingList() {
 
       <div className="shopping-content">
         <section className="shopping-list-card">
-          {!user ? (
+          {!user || !loaded ? (
             <p className="empty-list">Loading your list…</p>
           ) : items.length === 0 ? (
             <p className="empty-list">No items added yet.</p>
