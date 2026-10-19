@@ -3,13 +3,9 @@ import type { FormEvent } from 'react'
 import { useAuth } from '../context/AuthContext.tsx'
 import { newId } from '../lib/uuid.ts'
 import { PricingApiError } from './api.ts'
-import { AlternativesTable } from './AlternativesTable.tsx'
-import { ChainComparisonTable } from './ChainComparisonTable.tsx'
-import { PriceDisclaimer } from './PriceDisclaimer.tsx'
-import { chainLabel, cheapestMatch } from './chains.ts'
-import { formatPrice } from './format.ts'
-import { matchWithPolling } from './matchPolling.ts'
-import type { MatchItemResponse } from './types.ts'
+import { productsWithPolling } from './productPolling.ts'
+import { ProductResults } from './ProductResults.tsx'
+import type { ProductSearchResponse } from './types.ts'
 
 /**
  * Users type a product name, not an id. The backend stores prices under an id, so derive a stable one from
@@ -29,13 +25,16 @@ export function PriceSearch() {
   const { accessToken } = useAuth()
   const [term, setTerm] = useState('')
   const [searchedTerm, setSearchedTerm] = useState('')
-  const [result, setResult] = useState<MatchItemResponse | null>(null)
-  const [updating, setUpdating] = useState(false)
+  const [result, setResult] = useState<ProductSearchResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [cancelled, setCancelled] = useState(false)
   const controllerRef = useRef<AbortController | null>(null)
+  const tokenRef = useRef(accessToken)
 
+  useEffect(() => {
+    tokenRef.current = accessToken
+  })
   useEffect(() => () => controllerRef.current?.abort(), [])
 
   async function handleSubmit(event: FormEvent) {
@@ -51,25 +50,14 @@ export function PriceSearch() {
     setCancelled(false)
     setError(null)
     setResult(null)
-    setUpdating(false)
+    setSearchedTerm(trimmed)
     try {
-      const response = await matchWithPolling(
+      await productsWithPolling(
         { term: trimmed, itemId: searchItemId(trimmed) },
-        () => accessToken,
+        () => tokenRef.current,
         controller.signal,
-        (interim) => {
-          // Stale prices are worth showing straight away while the backend refreshes them.
-          if (interim.matches.length > 0 || interim.alternatives.length > 0) {
-            setSearchedTerm(trimmed)
-            setResult(interim)
-            setUpdating(interim.stale)
-          }
-        },
+        (response) => setResult(response), // show each answer straight away, stale or partial
       )
-      if (response === null) return // superseded by a newer search, or the page was left
-      setSearchedTerm(trimmed)
-      setResult(response)
-      setUpdating(false)
     } catch (err) {
       if (controller.signal.aborted) return
       setError(err instanceof PricingApiError ? err.message : 'Could not reach the pricing service.')
@@ -82,7 +70,6 @@ export function PriceSearch() {
     controllerRef.current?.abort()
     controllerRef.current = null
     setLoading(false)
-    setUpdating(false)
     setResult(null)
     setError(null)
   }
@@ -92,16 +79,11 @@ export function PriceSearch() {
     setCancelled(true)
   }
 
-  const matches = result?.matches ?? []
-  const alternatives = result?.alternatives ?? []
-  const nothingStored = result !== null && matches.length === 0 && alternatives.length === 0
-  const cheapest = cheapestMatch(matches)
-
   return (
     <div className="pricing-card">
       <h3>Look up a product</h3>
       <p className="pricing-card-lead">
-        Type what you are after and see the matching product and its price at New World, PAK&apos;nSAVE and
+        Type what you are after and see each matching product with its price at New World, PAK&apos;nSAVE and
         Woolworths.
       </p>
       <form className="pricing-form pricing-form-inline" onSubmit={handleSubmit}>
@@ -128,43 +110,13 @@ export function PriceSearch() {
         )}
       </form>
 
-      {loading && !updating && <p className="pricing-empty">Checking each supermarket… this can take up to about 20 seconds.</p>}
+      {loading && result === null && <p className="pricing-empty">Looking for “{searchedTerm}”…</p>}
 
       {error && <p className="pricing-error">{error}</p>}
 
       {cancelled && !loading && <p className="pricing-empty">Search cancelled.</p>}
 
-      {nothingStored && !loading && (
-        <p className="pricing-empty">No prices yet for “{searchedTerm}”, we&apos;ll keep looking. Try again shortly, or use different wording.</p>
-      )}
-
-      {updating && <p className="pricing-empty">Updating prices…</p>}
-
-      {result && result.stale && !updating && !loading && (matches.length > 0 || alternatives.length > 0) && (
-        <p className="pricing-empty">Some of these prices may be out of date.</p>
-      )}
-
-      {matches.length > 0 && (
-        <>
-          {cheapest && (
-            <p className="pricing-summary">
-              Cheapest at <strong>{chainLabel(cheapest.chainId)}</strong>:{' '}
-              <strong>{formatPrice(cheapest.priceAmount, cheapest.currency)}</strong>
-            </p>
-          )}
-          {result?.matchMethod === 'lexical' && (
-            <p className="pricing-empty">
-              Matched by keyword because the product matcher was unavailable, so a match may be less accurate.
-            </p>
-          )}
-          <div className="pricing-table-wrap">
-            <ChainComparisonTable matches={matches} />
-          </div>
-          <PriceDisclaimer />
-        </>
-      )}
-
-      <AlternativesTable alternatives={alternatives} />
+      {result && <ProductResults key={searchedTerm} response={result} searching={loading} term={searchedTerm} />}
     </div>
   )
 }

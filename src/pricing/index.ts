@@ -1,14 +1,18 @@
 export { PricingPage } from './PricingPage.tsx'
 export { default } from './PricingPage.tsx'
-export { AlternativesTable } from './AlternativesTable.tsx'
 export { PriceDisclaimer } from './PriceDisclaimer.tsx'
-export { ChainComparisonTable } from './ChainComparisonTable.tsx'
-export { formatPrice, formatUnitPrice, storeLabel } from './format.ts'
-export { searchPrices, compareShoppingList, matchItem, PricingApiError } from './api.ts'
-export { CHAINS, chainLabel, cheapestMatch } from './chains.ts'
+export { ProductComparisonTable } from './ProductComparisonTable.tsx'
+export { ProductResults } from './ProductResults.tsx'
+export { formatPrice, formatPerUnit } from './format.ts'
+export { searchPrices, compareShoppingList, PricingApiError } from './api.ts'
+export { fetchProducts, selectItemProduct } from './productsApi.ts'
+export { CHAINS, chainLabel } from './chains.ts'
 export type {
-  MatchView,
-  MatchItemResponse,
+  ChainPrice,
+  ProductView,
+  ProductSearchResponse,
+  ProductSearchStatus,
+  RefreshState,
   MatchMethod,
   PriceRecord,
   SearchResultResponse,

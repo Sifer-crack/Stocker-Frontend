@@ -81,7 +81,11 @@
 }
 
 .pricing-alternatives {
-  margin-top: 28px;
+  margin-top: 20px;
+  padding: 16px 18px;
+  border: 1px dashed #b9c6b6;
+  border-radius: 14px;
+  background: #f6f8f4;
 }
 
 .pricing-alternatives h4 {
@@ -142,4 +146,49 @@
   margin: 8px 0 0;
   color: #879488;
   font-size: 14px;
+}
+
+.product-table .product-cell-best {
+  background: #eaf5ee;
+}
+
+.pricing-btn-small {
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.alternatives-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 0;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.refresh-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.refresh-chip {
+  padding: 3px 10px;
+  border: 1px solid #d4ddd1;
+  border-radius: 999px;
+  font-size: 13px;
+  color: #65756b;
+}
+
+.refresh-chip-pending {
+  border-color: #198754;
+  color: #198754;
+}
+
+.refresh-chip-failed {
+  border-color: #b42318;
+  color: #b42318;
 }

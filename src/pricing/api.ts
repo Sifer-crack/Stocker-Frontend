@@ -4,7 +4,6 @@ import { normChain } from './chains.ts'
 import type {
   CompareShoppingListResult,
   FulfilmentMethod,
-  MatchItemResponse,
   SearchResultResponse,
   ShoppingListItemInput,
 } from './types.ts'
@@ -73,27 +72,5 @@ export function compareShoppingList(
       selectedChainId: params.selectedChainId ? normChain(params.selectedChainId) : null,
       ...(params.allowedMethods && params.allowedMethods.length > 0 ? { allowedMethods: params.allowedMethods } : {}),
     }),
-  })
-}
-
-export interface MatchItemParams {
-  /** What the user typed, e.g. "full cream milk 2L"; matched semantically per chain. */
-  term: string
-  /** The shopping-list item's id; the backend stores the matched prices under it. */
-  itemId: string
-  category?: string
-  /** Optional pack-size hints, e.g. a pantry product's selling weight or volume. */
-  weightKg?: number
-  volumeL?: number
-  signal?: AbortSignal
-}
-
-export function matchItem(params: MatchItemParams, accessToken: string | null): Promise<MatchItemResponse> {
-  const query = new URLSearchParams({ term: params.term, itemId: params.itemId })
-  if (params.category) query.set('category', params.category)
-  if (params.weightKg != null) query.set('weightKg', String(params.weightKg))
-  if (params.volumeL != null) query.set('volumeL', String(params.volumeL))
-  return requestJson<MatchItemResponse>(`${API_BASE}/api/pricing/match?${query.toString()}`, accessToken, {
-    signal: params.signal,
   })
 }

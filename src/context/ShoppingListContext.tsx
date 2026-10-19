@@ -5,10 +5,11 @@ import { useUser } from './UserContext'
 import { API_BASE } from '../lib/apiConfig'
 import { runSse } from '../lib/sseStream'
 import { PricingApiError } from '../pricing/api.ts'
-import { matchWithPolling } from '../pricing/matchPolling.ts'
+import { productsWithPolling } from '../pricing/productPolling.ts'
+import { selectItemProduct } from '../pricing/productsApi.ts'
 import { addShoppingItem, listShoppingItems, parseShoppingItemUpdate } from '../pricing/shoppingApi.ts'
 import type { ComparisonStatus, PriceView, ServerShoppingItem } from '../pricing/shoppingApi.ts'
-import type { MatchItemResponse, MatchMethod, MatchView } from '../pricing/types.ts'
+import type { ProductSearchResponse } from '../pricing/types.ts'
 
 export interface ShoppingItem {
   /** The server's item id; also the itemId pricing stores this item's matched prices under. */
@@ -28,15 +29,19 @@ export interface ItemPrices {
   comparedAt: string | null
 }
 
-/** Per-chain match detail from GET /api/pricing/match, loaded on demand (e.g. on the item page). */
+/** The products search for one item (GET /api/pricing/products), loaded on demand (e.g. on the item page). */
 export interface ItemDetail {
-  status: 'loading' | 'ready' | 'empty' | 'error'
-  matches: MatchView[]
-  alternatives: MatchView[]
-  matchMethod: MatchMethod | null
-  stale: boolean
+  /** True while the first answer is awaited or the backend is still loading supermarket pages. */
+  loading: boolean
+  /** The latest answer; kept visible while a refresh runs. */
+  response: ProductSearchResponse | null
   error: string | null
   updatedAt: string | null
+  /** The product compare will price: the first match unless the shopper picked another. */
+  selectedKey: string | null
+  /** The productKey being saved, while the PUT is in flight. */
+  selectingKey: string | null
+  selectError: string | null
 }
 
 interface ShoppingListContextType {
@@ -52,6 +57,8 @@ interface ShoppingListContextType {
   toggleCompleted: (id: string) => void
   /** (Re)loads one item's per-chain match detail. */
   refreshItem: (id: string) => void
+  /** Makes compare price exactly this product for the item. */
+  chooseProduct: (id: string, productKey: string) => Promise<void>
   /** The last problem talking to the server, or '' when all is well. */
   error: string
   /** True once the list has been fetched at least once (successfully or not), so "empty" can be trusted. */
@@ -296,50 +303,63 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     controllers.current.set(id, controller)
     const { signal } = controller
 
-    const toDetail = (response: MatchItemResponse, status: ItemDetail['status']): ItemDetail => ({
-      status,
-      matches: response.matches,
-      alternatives: response.alternatives,
-      matchMethod: response.matches.length > 0 ? response.matchMethod : null,
-      stale: response.stale,
+    const blank: ItemDetail = {
+      loading: true,
+      response: null,
       error: null,
-      updatedAt: new Date().toISOString(),
+      updatedAt: null,
+      selectedKey: null,
+      selectingKey: null,
+      selectError: null,
+    }
+
+    // Keep the last known answer visible while a refresh is in flight.
+    setDetails((current) => ({ ...current, [id]: { ...(current[id] ?? blank), loading: true, error: null } }))
+
+    productsWithPolling({ term: item.name, itemId: id }, () => tokenRef.current, signal, (response) => {
+      setDetails((current) => {
+        const previous = current[id] ?? blank
+        return {
+          ...current,
+          [id]: {
+            ...previous,
+            response,
+            updatedAt: new Date().toISOString(),
+            // The backend stores the first match under the item; remember a pick only while it is still offered.
+            selectedKey:
+              previous.selectedKey !== null && [...response.products, ...response.alternatives].some((p) => p.productKey === previous.selectedKey)
+                ? previous.selectedKey
+                : (response.products[0]?.productKey ?? null),
+          },
+        }
+      })
     })
-
-    // Keep the last known detail visible while a refresh is in flight.
-    setDetails((current) => ({
-      ...current,
-      [id]: { ...(current[id] ?? { matches: [], alternatives: [], matchMethod: null, stale: false, updatedAt: null }), status: 'loading', error: null },
-    }))
-
-    matchWithPolling(
-      { term: item.name, itemId: id },
-      () => tokenRef.current,
-      signal,
-      (interim) => {
-        // Show stale prices straight away; the status stays 'loading' while the refresh is awaited.
-        if (interim.matches.length > 0) setDetails((current) => ({ ...current, [id]: toDetail(interim, 'loading') }))
-      },
-    )
       .then((result) => {
         if (result === null) return // aborted: the item was hidden, refreshed, or the user changed
-        const found = result.matches.length > 0 || result.alternatives.length > 0
-        setDetails((current) => ({ ...current, [id]: toDetail(result, found ? 'ready' : 'empty') }))
+        setDetails((current) => (current[id] ? { ...current, [id]: { ...current[id], loading: false } } : current))
       })
       .catch((err: unknown) => {
         if (signal.aborted) return
         setDetails((current) => ({
           ...current,
-          [id]: {
-            ...(current[id] ?? { matches: [], alternatives: [], matchMethod: null, stale: false, updatedAt: null }),
-            status: 'error',
-            error: toMessage(err, 'Could not reach the pricing service.'),
-          },
+          [id]: { ...(current[id] ?? blank), loading: false, error: toMessage(err, 'Could not reach the pricing service.') },
         }))
       })
       .finally(() => {
         if (controllers.current.get(id) === controller) controllers.current.delete(id)
       })
+  }, [])
+
+  const chooseProduct = useCallback(async (id: string, productKey: string) => {
+    const patch = (change: Partial<ItemDetail>) =>
+      setDetails((current) => (current[id] ? { ...current, [id]: { ...current[id], ...change } } : current))
+    patch({ selectingKey: productKey, selectError: null })
+    try {
+      await selectItemProduct(id, productKey, tokenRef.current)
+      patch({ selectedKey: productKey, selectingKey: null })
+    } catch (err) {
+      patch({ selectingKey: null, selectError: toMessage(err, 'Could not select this product.') })
+    }
   }, [])
 
   const estimatedCost = useMemo(
@@ -361,10 +381,11 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       removeItem,
       toggleCompleted,
       refreshItem,
+      chooseProduct,
       error,
       loaded: loadedFor !== null && loadedFor === userId,
     }),
-    [items, prices, details, estimatedCost, addItem, removeItem, toggleCompleted, refreshItem, error, loadedFor, userId],
+    [items, prices, details, estimatedCost, addItem, removeItem, toggleCompleted, refreshItem, chooseProduct, error, loadedFor, userId],
   )
 
   return <ShoppingListContext.Provider value={value}>{children}</ShoppingListContext.Provider>

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chainLabel, cheapestMatch, normChain } from './chains.ts'
-import type { MatchView } from './types.ts'
+import { chainLabel, normChain } from './chains.ts'
 
 describe('chain ids', () => {
   it('normalises case and whitespace', () => {
@@ -14,17 +13,5 @@ describe('chain ids', () => {
 
   it('falls back to the raw id for an unknown chain', () => {
     expect(chainLabel('countdown')).toBe('countdown')
-  })
-})
-
-describe('cheapestMatch', () => {
-  const view = (priceAmount: number) => ({ priceAmount }) as MatchView
-
-  it('returns the lowest price', () => {
-    expect(cheapestMatch([view(3), view(2), view(5)])?.priceAmount).toBe(2)
-  })
-
-  it('returns null for no matches', () => {
-    expect(cheapestMatch([])).toBeNull()
   })
 })

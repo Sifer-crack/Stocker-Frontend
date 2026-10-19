@@ -1,5 +1,3 @@
-import type { MatchView } from './types.ts'
-
 export interface ChainInfo {
   /** Matches the backend's ChainId enum. */
   id: string
@@ -23,12 +21,4 @@ export function normChain(chainId: string): string {
 
 export function chainLabel(chainId: string): string {
   return CHAINS.find((chain) => normChain(chain.id) === normChain(chainId))?.label ?? chainId
-}
-
-export function cheapestMatch(matches: readonly MatchView[]): MatchView | null {
-  let best: MatchView | null = null
-  for (const match of matches) {
-    if (best === null || match.priceAmount < best.priceAmount) best = match
-  }
-  return best
 }

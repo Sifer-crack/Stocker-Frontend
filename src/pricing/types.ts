@@ -57,40 +57,7 @@ export interface CompareShoppingListResult {
   selectedChainId: string
 }
 
-/** One product the price engine matched to a requested item (GET /api/pricing/match). */
-export interface MatchView {
-  chainId: string
-  storeId: string
-  productName: string
-  brand: string | null
-  priceAmount: number
-  currency: string
-  promoFlag: boolean
-  capturedAt: string | null
-  /** 0..1 similarity between the requested term and productName. */
-  score: number
-  /** Always null today: there is nothing to link to, so don't render a link. */
-  productUrl: string | null
-  /** "exact" for `matches`, "alternative" for `alternatives`. */
-  matchType: 'exact' | 'alternative'
-  /** Price per kg, L or item; null when the pack size is unknown. */
-  unitPrice: number | null
-  /** The pack size as the backend parsed it, e.g. "2l" or "500g". */
-  packSize: string | null
-}
-
-/** "lexical" means the backend fell back to keyword scoring instead of its canonical product match. */
 export type MatchMethod = 'canonical' | 'lexical'
-
-export interface MatchItemResponse {
-  matchMethod: MatchMethod
-  /** At most one per chain, cheapest first. Empty (with empty `alternatives`) means nothing stored yet, not an error. */
-  matches: MatchView[]
-  /** Similar products that are not the exact thing asked for; show them apart from `matches`. */
-  alternatives: MatchView[]
-  /** Some prices are older than 12 h and a refresh may be running, so asking again shortly can return newer ones. */
-  stale: boolean
-}
 
 /** A saved supermarket chain, optionally narrowed to one store (GET /api/shopping/favorite-stores). */
 export interface FavoriteStore {
@@ -116,4 +83,47 @@ export interface StoreProduct {
 
 export interface StoreProductsResponse {
   products: StoreProduct[]
+}
+
+/** GET /api/pricing/products: one product, with a price per chain (chain ids are lower case here). */
+export interface ChainPrice {
+  price: number
+  unitPrice: number | null
+  promo: boolean
+  /** Prices are tracked per chain, so the UI ignores this. */
+  storeId: string
+  capturedAt: string | null
+  stale: boolean
+}
+
+export interface ProductView {
+  /** Stable id of the product; what PUT /api/pricing/items/{itemId}/product takes. */
+  productKey: string
+  name: string
+  brand: string | null
+  category: string | null
+  packSize: string | null
+  grade: string | null
+  unit: 'each' | 'l' | 'kg' | null
+  /** The cheapest chain's price per unit. */
+  unitPrice: number | null
+  cheapestChainId: string | null
+  /** Keyed by lower-case chain id; a chain that is missing does not carry the product (or has no data yet). */
+  prices: Record<string, ChainPrice>
+}
+
+/** `refreshing` is the only non-terminal state; `not-found` is final. */
+export type ProductSearchStatus = 'found' | 'alternatives-only' | 'refreshing' | 'not-found'
+
+export type RefreshState = 'pending' | 'done' | 'failed' | 'skipped'
+
+export interface ProductSearchResponse {
+  matchMethod: MatchMethod | 'generic-fallback'
+  status: ProductSearchStatus
+  stale: boolean
+  /** Per-chain page-load progress, keyed by lower-case chain id; empty when unknown. */
+  refresh: Record<string, RefreshState>
+  products: ProductView[]
+  /** Genuinely different products of the same category, at most 5. */
+  alternatives: ProductView[]
 }
