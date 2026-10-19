@@ -40,7 +40,7 @@ src/pricing/
 ├── chains.ts                # supported chains (id + label), normChain()
 ├── format.ts                # formatPrice(), formatPerUnit()
 ├── productsApi.ts           # GET /api/pricing/products, PUT .../items/{id}/product, GET /api/pricing/suggest
-├── productPolling.ts        # re-asks every 2.5 s while a page load is pending (max 10), abortable
+├── productPolling.ts        # re-asks every 2.5 s while a page load is pending (max 70, about 3 minutes), abortable
 ├── products.ts              # cheapest chain / price helpers
 ├── ProductComparisonTable.tsx # products x chains table (optional "Use this one" column)
 ├── ProductResults.tsx       # status messages, progress chips, table, opt-in alternatives, disclaimer
