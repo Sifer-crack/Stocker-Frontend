@@ -7,17 +7,20 @@ import { AuthProvider } from './context/AuthContext.tsx'
 import { UserProvider } from './context/UserContext.tsx'
 import { NotificationsProvider } from './context/NotificationsContext.tsx'
 import { ShoppingListProvider } from './context/ShoppingListContext.tsx'
+import { ThemeProvider } from './context/ThemeContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <UserProvider>
-          <NotificationsProvider>
-            <ShoppingListProvider>
-              <App />
-            </ShoppingListProvider>
-          </NotificationsProvider>
+          <ThemeProvider>
+            <NotificationsProvider>
+              <ShoppingListProvider>
+                <App />
+              </ShoppingListProvider>
+            </NotificationsProvider>
+          </ThemeProvider>
         </UserProvider>
       </AuthProvider>
     </BrowserRouter>

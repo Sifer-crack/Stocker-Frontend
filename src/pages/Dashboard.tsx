@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useUser } from '../context/UserContext'
 import { listPantry } from '../lib/pantryApi'
+import { useWeeklySpending } from '../hooks/useWeeklySpending'
+import ExportSpendingReportButton from '../components/ExportSpendingReportButton'
 import './Dashboard.css'
 
 interface DashboardProps {
-  items: string[]
+  items: readonly unknown[]
   estimatedCost: number
 }
 
@@ -21,6 +23,7 @@ function Dashboard({
   useLayoutEffect(() => {
     tokenRef.current = accessToken
   })
+  const { spent } = useWeeklySpending()
   const weeklyBudget = user?.groceryBudget ?? 0
   const [pantryCount, setPantryCount] = useState(0)
   const [lowStockCount, setLowStockCount] = useState(0)
@@ -50,10 +53,10 @@ function Dashboard({
 
   const handleCreateShoppingList = () => navigate('/shopping-list')
   const handleViewPantry = () => navigate('/pantry')
-  const remainingBudget = weeklyBudget - estimatedCost
-  const budgetUsedPercentage =
+  const remainingBudget = weeklyBudget - spent
+  const budgetRemainingPercentage =
   weeklyBudget > 0
-    ? Math.min((estimatedCost / weeklyBudget) * 100, 100)
+    ? Math.min(Math.max((remainingBudget / weeklyBudget) * 100, 0), 100)
     : 0
   return (
     <main className="dashboard-page">
@@ -80,18 +83,20 @@ function Dashboard({
           <div>
             <p>Weekly Grocery Budget</p>
             <h2>${weeklyBudget.toFixed(2)}</h2>
+            <ExportSpendingReportButton />
           </div>
 
           <div className="dashboard-budget-progress">
             <div className="dashboard-budget-bar">
               <div
                 className="dashboard-budget-fill"
-                style={{ width: `${budgetUsedPercentage}%` }}
+                style={{ width: `${budgetRemainingPercentage}%` }}
               ></div>
             </div>
 
             <div className="dashboard-budget-values">
               <strong>${estimatedCost.toFixed(2)} estimated</strong>
+              <strong>${spent.toFixed(2)} spent</strong>
               <strong>${remainingBudget.toFixed(2)} remaining</strong>
             </div>
           </div>

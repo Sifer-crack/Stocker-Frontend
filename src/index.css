@@ -1,4 +1,5 @@
-:root {
+:root,
+:root[data-theme='light'] {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: #173022;
   background: #f7f8f5;
@@ -6,6 +7,58 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color-scheme: light;
+
+  --app-bg: #f7f8f5;
+  --surface: #ffffff;
+  --surface-2: #fbfcfa;
+  --surface-3: #f2f5f1;
+  --border: #dfe5dc;
+  --border-soft: #edf0eb;
+  --border-strong: #d7dfd4;
+  --text-main: #173022;
+  --text-muted: #65756b;
+  --text-muted-2: #718075;
+  --text-faint: #879488;
+  --input-bg: #fbfcfa;
+  --input-border: #d7dfd4;
+  --accent: #198754;
+  --accent-hover: #157347;
+  --danger: #b42318;
+  --grey: #e5e7eb;
+  --grey-hover: #d1d5db;
+  --grey-text: #374151;
+}
+
+:root[data-theme='dark'] {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #e8efe9;
+  background: #101613;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
+
+  --app-bg: #101613;
+  --surface: #1a221d;
+  --surface-2: #222b25;
+  --surface-3: #232e27;
+  --border: #2e3a32;
+  --border-soft: #2a3530;
+  --border-strong: #3a4740;
+  --text-main: #e8efe9;
+  --text-muted: #a3b3a7;
+  --text-muted-2: #9fb0a4;
+  --text-faint: #8b988d;
+  --input-bg: #222b25;
+  --input-border: #3a4740;
+  --accent: #2fa36b;
+  --accent-hover: #3cb67e;
+  --danger: #f97066;
+  --grey: #374151;
+  --grey-hover: #4b5563;
+  --grey-text: #e5e7eb;
 }
 
 * {
@@ -22,10 +75,26 @@ body,
 
 body {
   min-height: 100vh;
-  background: #f7f8f5;
+  background: var(--app-bg);
+  color: var(--text-main);
 }
 
 button,
 input {
   font: inherit;
+}
+
+/* Keep the marketing landing page pinned to the light theme even in dark mode. */
+:root[data-theme='dark'] .landing-page {
+  background: #ffffff;
+  color: #173022;
+  --bg: #ffffff;
+  --text: #3f4d43;
+  --text-h: #173022;
+  --border: #e3e8e1;
+  --code-bg: #f2f5f1;
+  --social-bg: #f7f8f5;
+  --accent: #198754;
+  --accent-bg: #e6f4eb;
+  --accent-border: #bfe3cd;
 }

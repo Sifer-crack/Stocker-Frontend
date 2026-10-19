@@ -1,14 +1,14 @@
 .dashboard-page {
   min-height: 100vh;
-  background: #f7f8f5;
-  color: #173022;
+  background: var(--app-bg);
+  color: var(--text-main);
 }
 
 .dashboard-header {
   min-height: 120px;
   padding: 28px 44px;
-  background: #ffffff;
-  border-bottom: 1px solid #dfe5dc;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -19,12 +19,12 @@
 .dashboard-header h1 {
   margin: 0 0 6px;
   font-size: 34px;
-  color: #173022;
+  color: var(--text-main);
 }
 
 .dashboard-header p {
   margin: 0;
-  color: #718075;
+  color: var(--text-muted-2);
   font-size: 17px;
 }
 
@@ -37,10 +37,10 @@
 .dashboard-header-actions input {
   width: 280px;
   padding: 14px 16px;
-  border: 1px solid #d7dfd4;
+  border: 1px solid var(--input-border);
   border-radius: 14px;
-  background: #fbfcfa;
-  color: #173022;
+  background: var(--input-bg);
+  color: var(--text-main);
   font-size: 16px;
 }
 
@@ -48,7 +48,7 @@
   padding: 14px 22px;
   border: none;
   border-radius: 14px;
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
   font-size: 16px;
   font-weight: 700;
@@ -83,6 +83,10 @@
   font-size: 38px;
 }
 
+.dashboard-budget .export-report {
+  margin-top: 16px;
+}
+
 .dashboard-budget-progress {
   flex: 1;
   max-width: 700px;
@@ -110,8 +114,8 @@
 }
 
 .dashboard-card {
-  background: #ffffff;
-  border: 1px solid #dfe5dc;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 28px 36px;
 }
@@ -127,18 +131,18 @@
 .dashboard-card-heading h2 {
   margin: 0 0 8px;
   font-size: 26px;
-  color: #173022;
+  color: var(--text-main);
 }
 
 .dashboard-card-heading p {
   margin: 0;
-  color: #718075;
+  color: var(--text-muted-2);
   font-size: 17px;
 }
 
 .dashboard-card-heading > strong {
   font-size: 18px;
-  color: #718075;
+  color: var(--text-muted-2);
 }
 
 .dashboard-card-actions {
@@ -158,15 +162,15 @@
 .primary-button {
   flex: 1;
   border: none;
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
 }
 
 .secondary-button {
   padding: 0 26px;
-  background: #ffffff;
-  color: #198754;
-  border: 1px solid #cfd9cc;
+  background: var(--surface);
+  color: var(--accent);
+  border: 1px solid var(--border-strong);
 }
 
 .full-width {

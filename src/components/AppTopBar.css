@@ -1,0 +1,59 @@
+.app-topbar {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-sizing: border-box;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 60;
+}
+
+.app-topbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: none;
+  border: none;
+  border-radius: 12px;
+  padding: 4px 8px 4px 4px;
+  cursor: pointer;
+}
+
+.app-topbar-logo:focus-visible {
+  outline: 2px solid #198754;
+  outline-offset: 2px;
+}
+
+.app-topbar-wordmark {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.app-topbar-logo .logo-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #198754;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.app-topbar-logo .logo-icon::after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: #ffffff;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+}
