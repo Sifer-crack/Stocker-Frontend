@@ -1,5 +1,6 @@
 import './PricingTable.css'
 import { chainLabel } from './chains.ts'
+import { PriceDisclaimer } from './PriceDisclaimer.tsx'
 import { formatPrice, formatUnitPrice, storeLabel } from './format.ts'
 import type { MatchView } from './types.ts'
 
@@ -48,6 +49,7 @@ export function AlternativesTable({ alternatives }: AlternativesTableProps) {
           </tbody>
         </table>
       </div>
+      <PriceDisclaimer />
     </section>
   )
 }

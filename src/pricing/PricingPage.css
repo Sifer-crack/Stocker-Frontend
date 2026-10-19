@@ -119,6 +119,11 @@
   align-self: flex-end;
 }
 
+.pricing-btn-secondary {
+  background: #ffffff;
+  color: #198754;
+}
+
 .pricing-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;

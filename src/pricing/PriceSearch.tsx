@@ -5,6 +5,7 @@ import { newId } from '../lib/uuid.ts'
 import { PricingApiError } from './api.ts'
 import { AlternativesTable } from './AlternativesTable.tsx'
 import { ChainComparisonTable } from './ChainComparisonTable.tsx'
+import { PriceDisclaimer } from './PriceDisclaimer.tsx'
 import { chainLabel, cheapestMatch } from './chains.ts'
 import { formatPrice } from './format.ts'
 import { matchWithPolling } from './matchPolling.ts'
@@ -32,6 +33,7 @@ export function PriceSearch() {
   const [updating, setUpdating] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [cancelled, setCancelled] = useState(false)
   const controllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => () => controllerRef.current?.abort(), [])
@@ -46,6 +48,7 @@ export function PriceSearch() {
     controllerRef.current = controller
 
     setLoading(true)
+    setCancelled(false)
     setError(null)
     setResult(null)
     setUpdating(false)
@@ -75,6 +78,16 @@ export function PriceSearch() {
     }
   }
 
+  function handleCancel() {
+    controllerRef.current?.abort()
+    controllerRef.current = null
+    setLoading(false)
+    setUpdating(false)
+    setResult(null)
+    setError(null)
+    setCancelled(true)
+  }
+
   const matches = result?.matches ?? []
   const alternatives = result?.alternatives ?? []
   const nothingStored = result !== null && matches.length === 0 && alternatives.length === 0
@@ -100,11 +113,18 @@ export function PriceSearch() {
         <button type="submit" className="pricing-btn" disabled={loading}>
           {loading ? 'Searching…' : 'Search'}
         </button>
+        {loading && (
+          <button type="button" className="pricing-btn pricing-btn-secondary" onClick={handleCancel}>
+            Cancel
+          </button>
+        )}
       </form>
 
       {loading && !updating && <p className="pricing-empty">Checking each supermarket… this can take up to about 20 seconds.</p>}
 
       {error && <p className="pricing-error">{error}</p>}
+
+      {cancelled && !loading && <p className="pricing-empty">Search cancelled.</p>}
 
       {nothingStored && !loading && (
         <p className="pricing-empty">No prices yet for “{searchedTerm}”, we&apos;ll keep looking. Try again shortly, or use different wording.</p>
@@ -132,6 +152,7 @@ export function PriceSearch() {
           <div className="pricing-table-wrap">
             <ChainComparisonTable matches={matches} />
           </div>
+          <PriceDisclaimer />
         </>
       )}
 

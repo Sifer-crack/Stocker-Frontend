@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useShoppingList } from '../context/ShoppingListContext'
 import { useUser } from '../context/UserContext'
 import { AlternativesTable } from '../pricing/AlternativesTable.tsx'
+import { PriceDisclaimer } from '../pricing/PriceDisclaimer.tsx'
 import { ChainComparisonTable } from '../pricing/ChainComparisonTable.tsx'
 import { chainLabel, cheapestMatch } from '../pricing/chains.ts'
 import { formatPrice } from '../pricing/format.ts'
@@ -123,6 +124,7 @@ function ShoppingItemPage() {
             <div className="item-table-wrap">
               <ChainComparisonTable matches={matches} />
             </div>
+            <PriceDisclaimer />
 
             {detail?.stale && status !== 'loading' && (
               <p className="item-note">Some of these prices may be out of date.</p>

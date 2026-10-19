@@ -137,3 +137,9 @@
   padding: 0;
   accent-color: #198754;
 }
+
+.pricing-disclaimer {
+  margin: 8px 0 0;
+  color: #879488;
+  font-size: 14px;
+}

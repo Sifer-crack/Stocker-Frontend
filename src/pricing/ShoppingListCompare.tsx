@@ -7,6 +7,7 @@ import { compareShoppingList, PricingApiError } from './api.ts'
 import { CHAINS, chainLabel, normChain } from './chains.ts'
 import { feeText, FULFILMENT_METHODS, methodLabel, savingsText } from './fulfilment.ts'
 import { formatPrice } from './format.ts'
+import { PriceDisclaimer } from './PriceDisclaimer.tsx'
 import type { CompareShoppingListResult, FulfilmentMethod } from './types.ts'
 
 // Suggestions only: the backend's supported-region list is configuration and may differ, and it rejects
@@ -245,6 +246,7 @@ function CompareResults({ outcome }: { outcome: CompareOutcome }) {
           </tbody>
         </table>
       </div>
+      <PriceDisclaimer />
 
       {cheapest && (
         <p className="pricing-empty">
