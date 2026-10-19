@@ -14,9 +14,12 @@ the same product across New World, PAK'nSAVE and Woolworths.
 3. The list shows the server's `cheapest` price per item. `unavailable` means pricing rejected the item.
    `pending` can last a while (the backend never retries), so after 2 minutes the wording becomes
    "Still looking for prices…".
-4. `/shopping-list/:itemId` (`ShoppingItemPage.tsx`) loads the per-chain detail from `/api/pricing/match` the
-   first time it is opened: `ChainComparisonTable` (one fixed row per chain), `AlternativesTable` for similar
-   products, and an "Updating prices…" note while `stale` prices are being refreshed.
+4. `/shopping-list/:itemId` (`ShoppingItemPage.tsx`) loads the search from `/api/pricing/products` the first
+   time it is opened and renders it with `ProductResults`: rows are products, columns are chains (one product at
+   two chains is one row), "Use this one" picks the product compare will price (`PUT .../items/{id}/product`),
+   and similar alternatives sit in their own opt-in section. The answer is rendered by its `status`
+   (`found`, `alternatives-only`, `refreshing`, `not-found`), with per-chain progress chips while a page load
+   runs; `not-found` is final. `/pricing` "Look up a product" uses the same component without the pick buttons.
 5. The cheapest price x quantity feeds the list's estimated cost, the Dashboard and the sidebar.
 
 Ticked-off and removed items cannot be stored server-side yet (no endpoints), so they are remembered in
@@ -30,17 +33,20 @@ Related pages outside this folder: `pages/FavoriteStores.tsx` (favorite chains a
 
 ```
 src/pricing/
-├── api.ts                   # authFetch client: matchItem, compareShoppingList (searchPrices is unused by the UI)
+├── api.ts                   # authFetch client: compareShoppingList (searchPrices is unused by the UI)
 ├── shoppingApi.ts           # /api/shopping/items: add + list, and the shape of an item / live push
 ├── storesApi.ts             # favorite stores and a chain's stored products
 ├── types.ts                 # request/response shapes matching the gateway's REST DTOs
-├── chains.ts                # supported chains (id + label), cheapestMatch()
-├── format.ts                # formatPrice(), storeLabel()
-├── ChainComparisonTable.tsx # per-item, one-row-per-chain comparison table
-├── AlternativesTable.tsx    # similar (non-exact) products, shown apart from the exact matches
+├── chains.ts                # supported chains (id + label), normChain()
+├── format.ts                # formatPrice(), formatPerUnit()
+├── productsApi.ts           # GET /api/pricing/products and PUT /api/pricing/items/{id}/product
+├── productPolling.ts        # re-asks every 2.5 s while a page load is pending (max 10), abortable
+├── products.ts              # cheapest chain / price helpers
+├── ProductComparisonTable.tsx # products x chains table (optional "Use this one" column)
+├── ProductResults.tsx       # status messages, progress chips, table, opt-in alternatives, disclaimer
+├── PriceDisclaimer.tsx      # "Prices are chain-wide and may vary by store." under every price table
 ├── PricingTable.css         # table/error styles shared by every pricing view
-├── matchPolling.ts          # matchItem + capped retries while empty (3x) or stale (2x)
-├── PriceSearch.tsx          # /pricing "Look up a product": type a name, get one row per chain
+├── PriceSearch.tsx          # /pricing "Look up a product": type a name, get products by chain
 ├── fulfilment.ts            # labels and text for fulfilment methods, fees and (possibly negative) savings
 ├── ShoppingListCompare.tsx  # /pricing "Compare my shopping list": the real list, region, savings baseline
 ├── PricingPage.tsx          # /pricing: the two cards above
@@ -53,12 +59,20 @@ src/pricing/
 
 All calls need the gateway JWT (`Authorization: Bearer <accessToken>`, added by `authFetch`).
 
-- `GET /api/pricing/match?term=&itemId=&category=&weightKg=&volumeL=` ->
-  `{ matchMethod: "canonical" | "lexical", matches: MatchView[], alternatives: MatchView[], stale: boolean }`.
-  `matches`: at most one per chain, cheapest first (`matchType: "exact"`); `alternatives`:
-  `matchType: "alternative"`. Each view also has `unitPrice` (per kg / L / item, no unit sent, so the UI infers
-  it from `packSize`) and `packSize`; `productUrl` is always null. `stale` = some prices are older than 12 h and
-  a refresh may be running, so ask again shortly. Empty lists = nothing stored yet (not an error). 422 `{ error }`.
+- `GET /api/pricing/products?term=&itemId=[&category=][&limit=]` ->
+  `{ query, matchMethod: "canonical" | "lexical" | "generic-fallback", status, stale, refresh, products, alternatives }`.
+  A product is `{ productKey, name, brand, category, packSize, grade, unit, unitPrice, cheapestChainId, prices }`
+  with `prices` keyed by lower-case chain id (`{ price, unitPrice, promo, storeId, capturedAt, stale }`; `storeId`
+  is ignored: prices are per chain, not per store). Size and grade (`2L`, `12 pack`, `size 7`) are read from `term`.
+  `status`: `found`, `alternatives-only`, `refreshing` (ask again in 2-3 s; asking starts no new supermarket
+  request) or `not-found` (final). `refresh`: chain -> `pending | done | failed | skipped`. `generic-fallback`
+  means alternatives of the same type, not the typed product. 422 `{ error }`. The old `GET /api/pricing/match`
+  still exists on the backend (deprecated) but the UI no longer uses it.
+- `PUT /api/pricing/items/{itemId}/product` `{ productKey }` -> `{ itemId, productKey, chains }`; replaces the
+  item's earlier stored price so compare prices the selected product. 404 when the key is unknown.
+- `POST /api/pantry-items` takes a JSON body `{ userId, productId?, name?, category?, unit?, quantity,
+  expirationDate?, notifyDaysBefore? }` for free-text items (no catalog entry needed); catalog items still use
+  the query-parameter form.
 - `POST /api/shopping/items` `{ name, quantity?, category?, region? }` -> 201 `ServerShoppingItem` (pending);
   `GET /api/shopping/items`; SSE `GET /api/updates/shopping` (event `shopping-item-updated`, data
   `{ source: "sync"|"backfill", item }`, comment heartbeats every 25 s). The client sends no `X-User-Id`.

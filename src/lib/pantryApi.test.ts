@@ -23,6 +23,25 @@ describe('pantryApi', () => {
     expect(urlOf(withoutDate).searchParams.has('expirationDate')).toBe(false)
   })
 
+  it('adds a free-text item as a JSON body without a catalog product', async () => {
+    const fetchMock = stubFetch(Response.json({}))
+    await addPantryItem({ userId: 'u', name: ' Tim Tams ', quantity: 2, expirationDate: '2026-11-01', notifyDaysBefore: 5 }, 't')
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(new URL(url).search).toBe('')
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(init.body as string)).toEqual({
+      userId: 'u',
+      name: 'Tim Tams',
+      quantity: 2,
+      expirationDate: '2026-11-01',
+      notifyDaysBefore: 5,
+    })
+  })
+
+  it('refuses an item with neither a product nor a name', async () => {
+    await expect(addPantryItem({ userId: 'u', quantity: 1 }, 't')).rejects.toThrow('catalog product or a name')
+  })
+
   it('clears an expiry by sending neither field', async () => {
     const fetchMock = stubFetch(Response.json({}))
     await setPantryExpiry('item-1', null, 3, 't')

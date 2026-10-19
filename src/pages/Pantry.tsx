@@ -19,13 +19,13 @@ import {
 import type { ProductApiItem } from '../lib/pantryApi'
 
 interface PantryProps {
-  onAddToShoppingList: (name: string, productId?: string) => void
+  onAddToShoppingList: (name: string, productId?: string | null) => void
   shoppingListItems: ShoppingItem[]
 }
 
 interface PantryDisplayItem {
   id: string
-  productId: string
+  productId: string | null
   name: string
   quantity: number
   unit: string
@@ -271,6 +271,9 @@ function Pantry({
 
   const [productResults, setProductResults] = useState<ProductApiItem[]>([])
   const [selectedProduct, setSelectedProduct] = useState<ProductApiItem | null>(null)
+  /** Set when the user chose to add what they typed as a new item that is not in the catalog. */
+  const [customName, setCustomName] = useState<string | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [nutritionById, setNutritionById] = useState<Record<string, NutritionResult>>({})
   const [nutritionLoadingId, setNutritionLoadingId] = useState<string | null>(null)
   const [nutritionErrorById, setNutritionErrorById] = useState<Record<string, string>>({})
@@ -282,6 +285,7 @@ function Pantry({
     const handleClickOutside = (event: MouseEvent) => {
       if (productSearchRef.current && !productSearchRef.current.contains(event.target as Node)) {
         setProductResults([])
+        setMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -396,16 +400,17 @@ function Pantry({
 
       const displayItems = await Promise.all(
         pantryData.map(async (pantryItem) => {
-          const product = await getProduct(pantryItem.product_id, accessToken)
+          // Free-text items have no catalog entry; everything about them is on the pantry row itself.
+          const product = pantryItem.product_id ? await getProduct(pantryItem.product_id, accessToken) : null
 
           return {
             id: pantryItem.pantry_item_id,
             productId: pantryItem.product_id,
-            name: product.productName,
+            name: product?.productName ?? pantryItem.name ?? 'Pantry item',
             quantity: pantryItem.quantity,
-            unit: getProductSize(product),
+            unit: product ? getProductSize(product) : (pantryItem.unit ?? ''),
             lowStock: pantryItem.quantity <= 1,
-            category: product.groceryType,
+            category: product?.groceryType ?? pantryItem.category ?? null,
             expirationDate: pantryItem.expirationDate ?? null,
             notifyDaysBefore: pantryItem.notifyDaysBefore ?? null,
           }
@@ -430,6 +435,8 @@ function Pantry({
   const handleProductSearch = async (value: string) => {
     setNewItemName(value)
     setSelectedProduct(null)
+    setCustomName(null)
+    setMenuOpen(true)
     // Typing again supersedes the search still in flight.
     productSearchAbortRef.current?.abort()
 
@@ -459,7 +466,7 @@ function Pantry({
   }
 
   const handleAddPantryItem = async () => {
-    if (!user || !selectedProduct || newItemQuantity < 1) {
+    if (!user || (!selectedProduct && customName === null) || newItemQuantity < 1) {
       return
     }
 
@@ -470,7 +477,7 @@ function Pantry({
       await addPantryItem(
         {
           userId: user.id,
-          productId: selectedProduct.productId,
+          ...(selectedProduct ? { productId: selectedProduct.productId } : { name: customName ?? '' }),
           quantity: newItemQuantity,
           expirationDate: expirationDate ?? undefined,
           notifyDaysBefore: notifyDaysBefore ?? undefined,
@@ -482,6 +489,7 @@ function Pantry({
 
       setNewItemName('')
       setSelectedProduct(null)
+      setCustomName(null)
       setProductResults([])
       setNewItemQuantity(1)
       setNewExpirationDate('')
@@ -829,7 +837,7 @@ function Pantry({
                     onChange={(event) => handleProductSearch(event.target.value)}
                   />
 
-                  {filteredProductResults.length > 0 && !selectedProduct && (
+                  {menuOpen && newItemName.trim().length >= 2 && !selectedProduct && customName === null && (
                     <div className="product-dropdown">
                       {filteredProductResults.map((product) => (
                         <button
@@ -842,14 +850,27 @@ function Pantry({
                               `${product.productName} - ${getProductSize(product)}`
                             )
                             setProductResults([])
+                            setMenuOpen(false)
                           }}
                         >
                           <span>{product.productName}</span>
                           <span>{getProductSize(product)}</span>
                         </button>
                       ))}
+                      <button
+                        type="button"
+                        className="product-dropdown-item"
+                        onClick={() => {
+                          setCustomName(newItemName.trim())
+                          setProductResults([])
+                          setMenuOpen(false)
+                        }}
+                      >
+                        <span>Add &quot;{newItemName.trim()}&quot; as a new item</span>
+                      </button>
                     </div>
                   )}
+                  {customName !== null && <p className="pantry-custom-hint">New item, not in the product catalog.</p>}
                 </div>
               </div>
 
@@ -930,7 +951,7 @@ function Pantry({
                   type="button"
                   className="pantry-filter-done"
                   onClick={handleAddPantryItem}
-                  disabled={!selectedProduct || newItemQuantity < 1}
+                  disabled={(!selectedProduct && customName === null) || newItemQuantity < 1}
                 >
                   Add Pantry Item
                 </button>

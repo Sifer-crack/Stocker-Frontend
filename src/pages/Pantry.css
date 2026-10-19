@@ -771,3 +771,8 @@
 .pantry-clear-filters:hover {
   color: var(--accent);
 }
+.pantry-custom-hint {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}

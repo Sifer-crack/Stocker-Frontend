@@ -31,7 +31,12 @@ backend stack (`integration/sprint2-manual-test`, see `docs/MANUAL_TESTING.md` i
 ## Shopping list, match, compare (4.6)
 - [ ] Add an item: a "Fetching prices…" row at once, then prices appear without reload.
 - [ ] Reload: same state. Open an item page by URL directly: detail loads.
-- [ ] Match: one row per chain, alternatives apart, empty shows "No prices yet", stale shows "Updating prices…".
+- [ ] Item page and /pricing search: one row per product with a price per chain ("—" where not carried); a product at two chains is one row; the cheapest chain is highlighted; the disclaimer sits under each table.
+- [ ] Status: `refreshing` shows "Checking the supermarkets…" with per-chain chips and stops by itself; `not-found` shows "Nothing found at any supermarket"; `alternatives-only` shows "No exact match. Similar products:".
+- [ ] Alternatives: next to a real match they are hidden until "Include similar alternatives" is ticked, then appear in a separate dashed box; a generic-fallback result says it is the same type of product.
+- [ ] "Use this one" on the item page marks the row Selected, and the compare page then prices that product.
+- [ ] Cancel (and typing again) stops a running price search and clears the results.
+- [ ] Free-text items: in Pantry, typing "Tim Tams" and picking 'Add "Tim Tams" as a new item' adds it with no catalog entry; Add Item in the Pantry search bar prefills the form; on the shopping list the same option adds an uncatalogued item; Complete Shopping puts it in the pantry by name.
 - [ ] Compare: totals, items priced of N, unavailable item names, cheapest marked, savings positive/zero/negative.
 - [ ] Unsupported region shows the exact 422 message; no crash.
 - [ ] Picking a "compare savings against" store changes the baseline (needs the lower-case fix).

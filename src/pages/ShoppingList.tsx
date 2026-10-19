@@ -144,14 +144,13 @@ function ShoppingList() {
     setCompleting(true)
     setCompletionMessage('')
     try {
-      const notInPantry: string[] = []
       for (const item of purchased) {
         const productId = await findProductId(item.name)
-        if (!productId) {
-          notInPantry.push(item.name)
-          continue
-        }
-        await addPantryItem({ userId: user.id, productId, quantity: item.quantity }, tokenRef.current)
+        // Items typed freely have no catalog product; they go into the pantry by name.
+        await addPantryItem(
+          { userId: user.id, ...(productId ? { productId } : { name: item.name }), quantity: item.quantity },
+          tokenRef.current,
+        )
       }
 
       // The report records what the list actually priced; items without a price are left out rather than guessed.
@@ -180,9 +179,7 @@ function ShoppingList() {
       setCompletionMessage(
         [
           `${purchased.length} purchased ${purchased.length === 1 ? 'item' : 'items'} completed.`,
-          notInPantry.length > 0
-            ? `Not added to the pantry (not in the product catalog): ${notInPantry.join(', ')}.`
-            : 'Pantry updated.',
+          'Pantry updated.',
           unpriced > 0 ? `${unpriced} without a price ${unpriced === 1 ? 'was' : 'were'} left out of the spending report.` : '',
           reportSaved ? '' : 'Spending report could not be saved.',
         ]

@@ -12,7 +12,12 @@ import { authFetch, readErrorMessage } from './authFetch.ts'
 export interface PantryApiItem {
   pantry_item_id: string
   user_id: string
-  product_id: string
+  /** Null for a free-text item that has no catalog entry. */
+  product_id: string | null
+  /** Set for free-text items (and best-effort for catalog ones); the catalog name is the source otherwise. */
+  name?: string | null
+  category?: string | null
+  unit?: string | null
   quantity: number
   /** yyyy-mm-dd; null or absent when not set. */
   expirationDate?: string | null
@@ -45,7 +50,11 @@ export function listPantry(userId: string, accessToken: string | null): Promise<
 
 export interface AddPantryItemParams {
   userId: string
-  productId: string
+  /** A catalog product. Without one, `name` is required and the item is free text (e.g. Tim Tams). */
+  productId?: string
+  name?: string
+  category?: string
+  unit?: string
   quantity: number
   /** yyyy-mm-dd. Without a date no reminder is possible, so the threshold is then not sent. */
   expirationDate?: string
@@ -54,6 +63,25 @@ export interface AddPantryItemParams {
 
 /** Adding a product already in the pantry adds to its quantity; a new date replaces the old one. */
 export function addPantryItem(params: AddPantryItemParams, accessToken: string | null): Promise<PantryApiItem> {
+  if (!params.productId || params.name) {
+    // Free text goes in a JSON body; the query-parameter form below only knows catalog products.
+    if (!params.name?.trim()) return Promise.reject(new Error('A pantry item needs a catalog product or a name.'))
+    const hasDate = !!params.expirationDate
+    return json(`${API_BASE}/api/pantry-items`, accessToken, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: params.userId,
+        ...(params.productId ? { productId: params.productId } : {}),
+        name: params.name.trim(),
+        ...(params.category ? { category: params.category } : {}),
+        ...(params.unit ? { unit: params.unit } : {}),
+        quantity: params.quantity,
+        ...(hasDate ? { expirationDate: params.expirationDate } : {}),
+        ...(hasDate && params.notifyDaysBefore != null ? { notifyDaysBefore: params.notifyDaysBefore } : {}),
+      }),
+    })
+  }
   const query = new URLSearchParams({
     userId: params.userId,
     productId: params.productId,
