@@ -27,6 +27,7 @@ export interface ShoppingItem {
   productId?: string
   shoppingListItemId?: string
   quantity?: number
+  category?: string | null
   status: string
 }
 
