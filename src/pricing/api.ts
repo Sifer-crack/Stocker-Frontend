@@ -17,12 +17,20 @@ export class PricingApiError extends Error {
 }
 
 /** Every /api/pricing/** call needs the gateway JWT, so all requests go through authFetch. */
-async function requestJson<T>(url: string, accessToken: string | null, init?: RequestInit): Promise<T> {
+export async function requestJson<T>(url: string, accessToken: string | null, init?: RequestInit): Promise<T> {
   const response = await authFetch(url, accessToken, init)
   if (!response.ok) {
     throw new PricingApiError(response.status, await readErrorMessage(response))
   }
   return (await response.json()) as T
+}
+
+/** For endpoints that answer 204 with no body (e.g. a DELETE), where parsing JSON would throw. */
+export async function requestNoContent(url: string, accessToken: string | null, init?: RequestInit): Promise<void> {
+  const response = await authFetch(url, accessToken, init)
+  if (!response.ok) {
+    throw new PricingApiError(response.status, await readErrorMessage(response))
+  }
 }
 
 export interface SearchPricesParams {

@@ -5,6 +5,7 @@ import SignUp from './pages/SignUp'
 import Dashboard from './pages/Dashboard'
 import ShoppingList from './pages/ShoppingList'
 import ShoppingItemPage from './pages/ShoppingItemPage'
+import FavoriteStores from './pages/FavoriteStores'
 import StoreRecommendations from './pages/StoreRecommendations'
 import Sidebar from './components/Sidebar'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -82,6 +83,7 @@ function App() {
         />
         <Route path="/shopping-list/:itemId" element={<ShoppingItemPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/favorite-stores" element={<FavoriteStores />} />
         <Route
           path="/store-recommendations"
           element={

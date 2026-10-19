@@ -20,6 +20,7 @@ function Sidebar({ estimatedCost }: SidebarProps) {
     { label: 'My Pantry', path: '/pantry' },
     { label: 'Shopping List', path: '/shopping-list' },
     { label: 'Price Search', path: '/pricing' },
+    { label: 'Favorite Stores', path: '/favorite-stores' },
     { label: 'Shopping Options', path: '/store-recommendations' },
     { label: 'Shopping Route', path: '/shopping-route' },
     { label: 'Account', path: '/account' },
