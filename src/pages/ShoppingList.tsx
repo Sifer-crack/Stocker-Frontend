@@ -51,13 +51,15 @@ function ShoppingList() {
   const navigate = useNavigate()
   const { user } = useUser()
   const { accessToken } = useAuth()
-  const { items, prices, estimatedCost, addItem, removeItem, toggleCompleted, error, loaded } = useShoppingList()
+  const { items, prices, estimatedCost, addItem, removeItem, toggleCompleted, renameItem, error, loaded } = useShoppingList()
   const weeklyBudget = user?.groceryBudget ?? 0
   const [itemName, setItemName] = useState('')
   const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
   const [completionMessage, setCompletionMessage] = useState('')
   const [completing, setCompleting] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
   const productSearchRef = useRef<HTMLDivElement>(null)
   const tokenRef = useRef(accessToken)
   useLayoutEffect(() => {
@@ -267,11 +269,30 @@ function ShoppingList() {
                     />
 
                     <div>
-                      <strong>
-                        <Link to={`/shopping-list/${item.id}`} className="item-name-link">
-                          {item.name}
-                        </Link>
-                      </strong>
+                      {editingId === item.id ? (
+                        <input
+                          className="item-rename-input"
+                          value={editName}
+                          autoFocus
+                          aria-label={`New name for ${item.name}`}
+                          onChange={(event) => setEditName(event.target.value)}
+                          onBlur={() => setEditingId(null)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              renameItem(item.id, editName)
+                              setEditingId(null)
+                            } else if (event.key === 'Escape') {
+                              setEditingId(null)
+                            }
+                          }}
+                        />
+                      ) : (
+                        <strong>
+                          <Link to={`/shopping-list/${item.id}`} className="item-name-link">
+                            {item.name}
+                          </Link>
+                        </strong>
+                      )}
                       <p>Qty {item.quantity}</p>
                     </div>
                   </div>
@@ -282,6 +303,16 @@ function ShoppingList() {
                     <Link to={`/shopping-list/${item.id}`} className="item-compare-link">
                       Compare
                     </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditName(item.name)
+                        setEditingId(item.id)
+                      }}
+                    >
+                      Rename
+                    </button>
 
                     <button
                       type="button"

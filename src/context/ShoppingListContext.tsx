@@ -55,6 +55,11 @@ interface ShoppingListContextType {
   /** Local only: hides the item in this browser (the backend has no delete yet). */
   removeItem: (id: string) => void
   toggleCompleted: (id: string) => void
+  /**
+   * Renames an item. The backend cannot edit an item, so the new name becomes a new server item (priced afresh)
+   * that takes the old one's place, quantity and ticked state; the old one is hidden locally.
+   */
+  renameItem: (id: string, newName: string) => void
   /** (Re)loads one item's per-chain match detail. */
   refreshItem: (id: string) => void
   /** Makes compare price exactly this product for the item. */
@@ -281,6 +286,47 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
+  const renameItem = useCallback((id: string, rawName: string) => {
+    const name = rawName.trim()
+    const old = itemsRef.current[id]
+    if (name === '' || !old || userIdRef.current === null || name === old.name) return
+    const key = name.toLowerCase()
+    if (adding.current.has(key)) return
+
+    const replaceOld = (newId: string) => {
+      controllers.current.get(id)?.abort()
+      controllers.current.delete(id)
+      setOverlayState((prev) => {
+        const { completed, removed } = prev.overlay
+        const wasCompleted = completed.includes(id)
+        return {
+          ...prev,
+          overlay: {
+            completed: wasCompleted && !completed.includes(newId) ? [...completed.filter((c) => c !== id), newId] : completed.filter((c) => c !== id),
+            removed: [...removed.filter((r) => r !== newId), ...(removed.includes(id) ? [] : [id])],
+          },
+        }
+      })
+    }
+
+    // Renaming to a name that already exists on the server reuses that item rather than duplicating it.
+    const existing = Object.values(itemsRef.current).find((item) => item.name.toLowerCase() === key && item.id !== id)
+    if (existing) {
+      replaceOld(existing.id)
+      return
+    }
+
+    adding.current.add(key)
+    addShoppingItem({ name, quantity: old.quantity }, tokenRef.current)
+      .then((created) => {
+        setServerItems((current) => mergeItem(current, created))
+        replaceOld(created.id)
+        setError('')
+      })
+      .catch((err: unknown) => setError(toMessage(err, 'Could not rename that item.')))
+      .finally(() => adding.current.delete(key))
+  }, [])
+
   const toggleCompleted = useCallback((id: string) => {
     setOverlayState((prev) => {
       const { completed } = prev.overlay
@@ -380,12 +426,13 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
       addItem,
       removeItem,
       toggleCompleted,
+      renameItem,
       refreshItem,
       chooseProduct,
       error,
       loaded: loadedFor !== null && loadedFor === userId,
     }),
-    [items, prices, details, estimatedCost, addItem, removeItem, toggleCompleted, refreshItem, chooseProduct, error, loadedFor, userId],
+    [items, prices, details, estimatedCost, addItem, removeItem, toggleCompleted, renameItem, refreshItem, chooseProduct, error, loadedFor, userId],
   )
 
   return <ShoppingListContext.Provider value={value}>{children}</ShoppingListContext.Provider>
