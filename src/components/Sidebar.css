@@ -88,6 +88,18 @@
   background: #198754;
 }
 
+.nav-badge {
+  margin-left: auto;
+  min-width: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #198754;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .sidebar-bottom {
   margin-top: auto;
 }

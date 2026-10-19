@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import './Sidebar.css'
+import { useNotifications } from '../context/NotificationsContext'
 import { useUser } from '../context/UserContext'
 
 interface SidebarProps {
@@ -8,6 +9,7 @@ interface SidebarProps {
 
 function Sidebar({ estimatedCost }: SidebarProps) {
   const { user } = useUser()
+  const { unreadCount } = useNotifications()
 
   const weeklyBudget = user?.groceryBudget ?? 0
   const remainingBudget = weeklyBudget - estimatedCost
@@ -23,6 +25,7 @@ function Sidebar({ estimatedCost }: SidebarProps) {
     { label: 'Favorite Stores', path: '/favorite-stores' },
     { label: 'Shopping Options', path: '/store-recommendations' },
     { label: 'Shopping Route', path: '/shopping-route' },
+    { label: 'Notifications', path: '/notifications' },
     { label: 'Account', path: '/account' },
   ]
 
@@ -44,6 +47,9 @@ function Sidebar({ estimatedCost }: SidebarProps) {
           >
             <span className="nav-dot"></span>
             {item.label}
+            {item.path === '/notifications' && unreadCount > 0 && (
+              <span className="nav-badge">{unreadCount}</span>
+            )}
           </NavLink>
         ))}
       </nav>

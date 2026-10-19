@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import ShoppingList from './pages/ShoppingList'
 import ShoppingItemPage from './pages/ShoppingItemPage'
 import FavoriteStores from './pages/FavoriteStores'
+import Notifications from './pages/Notifications'
 import StoreRecommendations from './pages/StoreRecommendations'
 import Sidebar from './components/Sidebar'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -100,6 +101,7 @@ function App() {
             )
           }
         />
+        <Route path="/notifications" element={<Notifications />} />
         <Route path="/account" element={<Account />} />
       </Route>
 
