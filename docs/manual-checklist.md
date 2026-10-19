@@ -44,3 +44,9 @@ backend stack (`integration/sprint2-manual-test`, see `docs/MANUAL_TESTING.md` i
 - [ ] Nothing ticked: Compare is disabled.
 - [ ] Empty `storeTotals` (e.g. delivery only with a PAK'nSAVE-only result) shows the "No supermarket offers…" message.
 - [ ] Best option and fee are shown per chain; "All options" lists alternatives.
+
+## Notification pop-ups
+- [ ] With a NEW expiry notification, a card appears top right (under the top bar) with the product name and "Expires in N days"; it disappears after about 9 s, or on ×.
+- [ ] Hovering a card pauses its timer. "View notifications" opens the page and dismisses the card.
+- [ ] More than three new notifications: three cards plus "and N more"; dismissing one brings the next in.
+- [ ] A dismissed or timed-out card does not come back on the next poll or after a reload (same tab session); acknowledging a notification removes its card.
