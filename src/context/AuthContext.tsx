@@ -2,6 +2,18 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { API_BASE } from '../lib/apiConfig'
+import { readErrorMessage } from '../lib/authFetch'
+import {
+  onSessionExpired,
+  onTokensRefreshed,
+  parseSessionTokens,
+  refreshSession,
+  setLatestToken,
+} from '../lib/session'
+
+/** Refresh this long before the access token expires. */
+const REFRESH_MARGIN_SECONDS = 60
+const MIN_REFRESH_DELAY_SECONDS = 10
 
 interface AuthContextType {
   accessToken: string | null
@@ -12,45 +24,40 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-async function readErrorMessage(response: Response): Promise<string> {
-  try {
-    const data: unknown = await response.json()
-    if (typeof data === 'object' && data !== null && 'error' in data && typeof data.error === 'string') {
-      return data.error
-    }
-  } catch {
-    // Fall through to the generic message below.
-  }
-  return `Request failed with status ${response.status}`
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null)
+  const [expiresIn, setExpiresIn] = useState(0)
   const [loading, setLoading] = useState(true)
 
+  // Pick up refreshes (scheduled below, or triggered by a 401 in authFetch) and sessions that ended.
   useEffect(() => {
-    async function refresh() {
-      try {
-        const response = await fetch(`${API_BASE}/api/identity/refresh`, {
-          method: 'POST',
-          credentials: 'include',
-        })
-        if (!response.ok) {
-          return
-        }
-        const data: unknown = await response.json()
-        if (typeof data === 'object' && data !== null && 'accessToken' in data && typeof data.accessToken === 'string') {
-          setAccessToken(data.accessToken)
-        }
-      } catch {
-        // No stored session (or backend unreachable) — stay logged out.
-      } finally {
-        setLoading(false)
-      }
+    const offRefreshed = onTokensRefreshed((tokens) => {
+      setAccessToken(tokens.accessToken)
+      setExpiresIn(tokens.expiresIn)
+    })
+    const offExpired = onSessionExpired(() => setAccessToken(null))
+    return () => {
+      offRefreshed()
+      offExpired()
     }
-
-    refresh()
   }, [])
+
+  useEffect(() => {
+    // Restore the session from the refresh cookie; the listener above stores the token.
+    refreshSession().finally(() => setLoading(false))
+  }, [])
+
+  // Refresh a little before the 15 minute access token runs out, so calls, polling and the live stream keep working.
+  useEffect(() => {
+    if (accessToken === null) return
+    const delaySeconds = Math.max(expiresIn - REFRESH_MARGIN_SECONDS, MIN_REFRESH_DELAY_SECONDS)
+    const timer = setTimeout(() => {
+      void refreshSession().then((tokens) => {
+        if (tokens === null) setAccessToken(null)
+      })
+    }, delaySeconds * 1000)
+    return () => clearTimeout(timer)
+  }, [accessToken, expiresIn])
 
   const login = async (email: string, password: string): Promise<void> => {
     const response = await fetch(`${API_BASE}/api/identity/login`, {
@@ -64,12 +71,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!response.ok) {
       throw new Error(await readErrorMessage(response))
     }
-    const data: unknown = await response.json()
-    if (typeof data !== 'object' || data === null || !('accessToken' in data) || typeof data.accessToken !== 'string') {
+    const tokens = parseSessionTokens(await response.json())
+    if (tokens === null) {
       throw new Error('Login failed: unexpected response from server.')
     }
     // Refresh token is stored by the browser as an HttpOnly cookie.
-    setAccessToken(data.accessToken)
+    setLatestToken(tokens.accessToken)
+    setAccessToken(tokens.accessToken)
+    setExpiresIn(tokens.expiresIn)
   }
 
   const logout = async (): Promise<void> => {
@@ -81,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Clearing local state matters more than the server call here.
     } finally {
+      setLatestToken(null)
       setAccessToken(null)
     }
   }
