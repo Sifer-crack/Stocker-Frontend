@@ -14,6 +14,10 @@ interface PantryApiItem {
   user_id: string
   product_id: string
   quantity: number
+  /** yyyy-mm-dd; null when the item has no expiry date. */
+  expirationDate: string | null
+  /** Days before expirationDate to be notified; null uses the backend's default. */
+  notifyDaysBefore: number | null
 }
 
 interface ProductApiItem {
@@ -30,6 +34,28 @@ interface PantryDisplayItem {
   quantity: number
   unit: string
   lowStock: boolean
+  expirationDate: string | null
+  notifyDaysBefore: number | null
+}
+
+/** The inventory service answers errors with {"message": "..."}. */
+const readInventoryError = async (response: Response, fallback: string): Promise<string> => {
+  try {
+    const data: unknown = await response.json()
+    if (typeof data === 'object' && data !== null && 'message' in data && typeof data.message === 'string') {
+      return data.message
+    }
+  } catch {
+    // No JSON body: use the fallback.
+  }
+  return fallback
+}
+
+/** Query params for the optional expiry fields; a threshold without a date is rejected by the backend. */
+const expiryParams = (params: URLSearchParams, expirationDate: string, notifyDaysBefore: string): void => {
+  if (expirationDate === '') return
+  params.set('expirationDate', expirationDate)
+  if (notifyDaysBefore !== '') params.set('notifyDaysBefore', notifyDaysBefore)
 }
 
 const getProductSize = (product: ProductApiItem): string => {
@@ -60,6 +86,10 @@ function Pantry({
   const [newItemQuantity, setNewItemQuantity] = useState(1)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editingQuantity, setEditingQuantity] = useState(1)
+  const [newExpirationDate, setNewExpirationDate] = useState('')
+  const [newNotifyDays, setNewNotifyDays] = useState('')
+  const [editingExpirationDate, setEditingExpirationDate] = useState('')
+  const [editingNotifyDays, setEditingNotifyDays] = useState('')
 
   const[productResults, setProductResults] = useState<ProductApiItem[]>([])
   const[selectedProduct, setSelectedProduct] = useState<ProductApiItem | null>(null)
@@ -106,6 +136,8 @@ function Pantry({
             quantity: pantryItem.quantity,
             unit: getProductSize(product),
             lowStock: pantryItem.quantity <= 1,
+            expirationDate: pantryItem.expirationDate ?? null,
+            notifyDaysBefore: pantryItem.notifyDaysBefore ?? null,
           }
         })
       )
@@ -164,6 +196,7 @@ function Pantry({
         productId: selectedProduct.productId,
         quantity: String(newItemQuantity),
       })
+      expiryParams(params, newExpirationDate, newNotifyDays)
 
       const response = await fetch(
           `http://localhost:8087/pantry-items?${params.toString()}`,
@@ -173,7 +206,7 @@ function Pantry({
       )
 
       if (!response.ok) {
-        throw new Error('Could not add pantry item')
+        throw new Error(await readInventoryError(response, 'Could not add pantry item'))
       }
 
       // reload pantry from backend
@@ -183,10 +216,12 @@ function Pantry({
       setSelectedProduct(null)
       setProductResults([])
       setNewItemQuantity(1)
+      setNewExpirationDate('')
+      setNewNotifyDays('')
       setShowAddForm(false)
     } catch (err) {
       console.error(err)
-      setError('Unable to add pantry item')
+      setError(err instanceof Error ? err.message : 'Unable to add pantry item')
     }
 }
 
@@ -213,6 +248,8 @@ const handleRemovePantryItem = async (id: string) => {
 const handleStartEdit = (item: PantryDisplayItem) => {
   setEditingItemId(item.id)
   setEditingQuantity(item.quantity)
+  setEditingExpirationDate(item.expirationDate ?? '')
+  setEditingNotifyDays(item.notifyDaysBefore === null ? '' : String(item.notifyDaysBefore))
 }
 
 const handleShowNutrition = async (item: PantryDisplayItem) => {
@@ -270,14 +307,28 @@ const handleSaveEdit = async (id: string) => {
     )
 
     if (!response.ok) {
-      throw new Error('Could not update pantry item')
+      throw new Error(await readInventoryError(response, 'Could not update pantry item'))
+    }
+
+    // Sending neither field clears the expiry date.
+    const expiry = new URLSearchParams()
+    expiryParams(expiry, editingExpirationDate, editingNotifyDays)
+    const expiryResponse = await fetch(
+      `http://localhost:8087/pantry-items/${id}/expiry?${expiry.toString()}`,
+      {
+        method: 'PUT',
+      }
+    )
+
+    if (!expiryResponse.ok) {
+      throw new Error(await readInventoryError(expiryResponse, 'Could not update the expiry date'))
     }
 
     setEditingItemId(null)
     await loadPantry()
   } catch (err) {
     console.error(err)
-    setError('Unable to update pantry item.')
+    setError(err instanceof Error ? err.message : 'Unable to update pantry item.')
   }
 }
 
@@ -335,6 +386,25 @@ const handleSaveEdit = async (id: string) => {
                 setNewItemQuantity(Number(event.target.value))
               }
             />
+            <label className="expiry-field">
+              <span>Expires on (optional)</span>
+              <input
+                type="date"
+                value={newExpirationDate}
+                onChange={(event) => setNewExpirationDate(event.target.value)}
+              />
+            </label>
+            <label className="expiry-field">
+              <span>Remind me (days before)</span>
+              <input
+                type="number"
+                min="0"
+                placeholder="Default"
+                value={newNotifyDays}
+                disabled={newExpirationDate === ''}
+                onChange={(event) => setNewNotifyDays(event.target.value)}
+              />
+            </label>
             <button
               type="button"
               onClick={handleAddPantryItem}
@@ -370,16 +440,44 @@ const handleSaveEdit = async (id: string) => {
               <div>
                 <h3>{item.name}</h3>
                 {editingItemId === item.id ? (
-                  <input
-                    type="number"
-                    min="1"
-                    value={editingQuantity}
-                    onChange={(event) =>
-                      setEditingQuantity(Number(event.target.value))
-                    }
-                  />
+                  <>
+                    <input
+                      type="number"
+                      min="1"
+                      value={editingQuantity}
+                      onChange={(event) =>
+                        setEditingQuantity(Number(event.target.value))
+                      }
+                    />
+                    <label className="expiry-field">
+                      <span>Expires on</span>
+                      <input
+                        type="date"
+                        value={editingExpirationDate}
+                        onChange={(event) => setEditingExpirationDate(event.target.value)}
+                      />
+                    </label>
+                    <label className="expiry-field">
+                      <span>Remind me (days before)</span>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Default"
+                        value={editingNotifyDays}
+                        disabled={editingExpirationDate === ''}
+                        onChange={(event) => setEditingNotifyDays(event.target.value)}
+                      />
+                    </label>
+                  </>
                 ) : (
-                  <p>Quantity: {item.quantity}</p>
+                  <>
+                    <p>Quantity: {item.quantity}</p>
+                    {item.expirationDate && (
+                      <p className="pantry-expiry">
+                        Expires {new Date(`${item.expirationDate}T00:00:00`).toLocaleDateString()}
+                      </p>
+                    )}
+                  </>
                 )}
 
                 {item.lowStock && (

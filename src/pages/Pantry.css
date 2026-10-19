@@ -103,6 +103,20 @@
   color: #65756b;
 }
 
+.pantry-item .pantry-expiry {
+  color: #8a6214;
+  font-size: 14px;
+}
+
+.expiry-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  color: #65756b;
+  font-size: 13px;
+}
+
 .low-stock {
   display: inline-block;
   padding: 5px 10px;
