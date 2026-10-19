@@ -16,10 +16,18 @@ import ShoppingRoute from './pages/ShoppingRoute'
 import Pantry from './pages/Pantry'
 import Account from './pages/Account'
 import { LandingPage } from './landing-page'
+import { useUser } from './context/UserContext'
+import {
+  addShoppingListItem,
+    fetchShoppingList,
+} from './lib/shoppingListApi'
 
 export interface ShoppingItem {
   name: string
   productId?: string
+  shoppingListItemId?: string
+  quantity?: number
+  status: string
 }
 
 function AppLayout() {
@@ -111,6 +119,7 @@ function App() {
   const { accessToken, loading } = useAuth()
   const [items, setItems] = useState<ShoppingItem[]>([])
   const [selectedOption, setSelectedOption] = useState('')
+  const { user } = useUser()
 
   const itemPrices: Record<string, number> = {
     milk: 4.80,
@@ -129,23 +138,28 @@ function App() {
     return total + price
   }, 0)
 
-  const handleAddToShoppingList = (
+  const handleAddToShoppingList = async (
     name: string,
     productId?: string
   ) => {
-    setItems((currentItems) => {
-      if (currentItems.some((item) => item.name === name)) {
-        return currentItems
-      }
+    if (!user.id) {
+      console.error('You must be signed in to add to shopping list.')
+      return
+    }
 
-      return [
-        ...currentItems,
-        {
-          name,
-          productId,
-        },
-      ]
-    })
+    if (!productId) {
+      console.error(`Cannot add "${name}" because no product ID was provided.`,)
+      return
+    }
+
+    try {
+      await addShoppingListItem(user.id, productId, 1)
+      const updatedItems = await fetchShoppingList(user.id)
+
+      setItems(updatedItems)
+    } catch (error) {
+      console.error('Unable to add pantry product to shopping list: ', error)
+    }
   }
 
   const handleChooseOption = (option: string) => {
