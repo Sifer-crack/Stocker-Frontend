@@ -40,7 +40,7 @@ function wait(ms: number, signal: AbortSignal): Promise<void> {
 }
 
 /** Splits one raw event block into its name and data; comment-only blocks (heartbeats) yield null. */
-function parseBlock(block: string): { event: string; data: string } | null {
+export function parseBlock(block: string): { event: string; data: string } | null {
   let event = 'message'
   const data: string[] = []
   for (const line of block.split('\n')) {

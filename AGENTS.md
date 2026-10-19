@@ -10,7 +10,7 @@
 - `npx tsc -b`: Typecheck project references (`tsconfig.app.json` + `tsconfig.node.json`).
 - `npm run build`: Typecheck and build bundle (`tsc -b && vite build`) to `dist/`.
 - `npm run preview`: Preview production build locally.
-- *Note:* No test runner or test suite is currently configured.
+- `npm test`: Run the vitest unit tests (`src/**/*.test.ts`, plain Node, no network). They cover pure logic only: SSE parsing, token refresh in `authFetch`, match polling caps, pantry query building, chain-id and fulfilment helpers.
 
 ## TypeScript & Compiler Constraints
 - Uses TypeScript composite project references: root `tsconfig.json` references `tsconfig.app.json` (`src/`) and `tsconfig.node.json` (`vite.config.ts`).
@@ -21,7 +21,7 @@
 ## Verification Workflow
 Before committing or concluding edits, verify:
 ```bash
-npm run lint && npm run build
+npm run lint && npm run build && npm test
 ```
 
 ## Modules & Architecture

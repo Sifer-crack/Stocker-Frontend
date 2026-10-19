@@ -1,6 +1,6 @@
 # Manual test checklist (Sprint 2 frontend)
 
-None of these have been run. Lint and build passing only proves the code compiles. Run them against the
+None of these have been run. Unit tests (`npm test`) cover the pure logic only. Lint and build passing only proves the code compiles. Run them against the
 backend stack (`integration/sprint2-manual-test`, see `docs/MANUAL_TESTING.md` in the backend repo) at
 `http://localhost:5173` with a freshly registered user. Tick and date each line.
 
