@@ -5,13 +5,22 @@ import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './context/AuthContext.tsx'
 import { UserProvider } from './context/UserContext.tsx'
+import { NotificationsProvider } from './context/NotificationsContext.tsx'
+import { ShoppingListProvider } from './context/ShoppingListContext.tsx'
+import { ThemeProvider } from './context/ThemeContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <UserProvider>
-          <App />
+          <ThemeProvider>
+            <NotificationsProvider>
+              <ShoppingListProvider>
+                <App />
+              </ShoppingListProvider>
+            </NotificationsProvider>
+          </ThemeProvider>
         </UserProvider>
       </AuthProvider>
     </BrowserRouter>

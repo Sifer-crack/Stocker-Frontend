@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { useAuth } from './AuthContext'
 import { authFetch, readErrorMessage } from '../lib/authFetch'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { API_BASE } from '../lib/apiConfig'
 
 export interface User {
   id: string

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './Login.css'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { API_BASE } from '../lib/apiConfig'
 
 function SignUp() {
   const navigate = useNavigate()
@@ -133,6 +133,10 @@ function SignUp() {
           </Link>
         </p>
       </section>
+
+      <Link to="/" className="login-back">
+        ← Back to Home
+      </Link>
     </main>
   )
 }

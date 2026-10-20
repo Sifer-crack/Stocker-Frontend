@@ -1,38 +1,59 @@
 import { NavLink } from 'react-router-dom'
 import './Sidebar.css'
+import { useNotifications } from '../context/NotificationsContext'
 import { useUser } from '../context/UserContext'
-import { useAuth } from '../context/AuthContext'
+import { useWeeklySpending } from '../hooks/useWeeklySpending'
+import ExportSpendingReportButton from './ExportSpendingReportButton'
 
 interface SidebarProps {
-  estimatedCost: number
+  isHidden?: boolean
+  isPeek?: boolean
+  isClosing?: boolean
+  onMouseLeave?: () => void
+  onMouseEnter?: () => void
 }
 
-function Sidebar({ estimatedCost }: SidebarProps) {
+function Sidebar({
+  isHidden = false,
+  isPeek = false,
+  isClosing = false,
+  onMouseLeave,
+  onMouseEnter,
+}: SidebarProps) {
   const { user } = useUser()
-  const { logout } = useAuth()
+  const { unreadCount } = useNotifications()
+  const { spent } = useWeeklySpending()
 
   const weeklyBudget = user?.groceryBudget ?? 0
-  const remainingBudget = weeklyBudget - estimatedCost
-  const budgetUsedPercentage =
+  const remainingBudget = weeklyBudget - spent
+  const budgetRemainingPercentage =
     weeklyBudget > 0
-      ? Math.min((estimatedCost / weeklyBudget) * 100, 100)
+      ? Math.min(Math.max((remainingBudget / weeklyBudget) * 100, 0), 100)
       : 0
   const navItems = [
     { label: 'Dashboard', path: '/dashboard' },
     { label: 'My Pantry', path: '/pantry' },
     { label: 'Shopping List', path: '/shopping-list' },
-    { label: 'Shopping Options', path: '/store-recommendations' },
-    { label: 'Shopping Route', path: '/shopping-route' },
-    { label: 'Account', path: '/account' },
+    { label: 'Price Search', path: '/pricing' },
+    { label: 'Favorite Stores', path: '/favorite-stores' },
+    { label: 'Notifications', path: '/notifications' },
   ]
 
-  return (
-    <aside className="sidebar">
-      <div className="sidebar-logo">
-        <div className="logo-icon"></div>
-        <span>STOCKER</span>
-      </div>
+  const className = isPeek
+    ? `sidebar sidebar--peek${isClosing ? ' sidebar--peek-closing' : ''}`
+    : isHidden
+      ? 'sidebar sidebar--hidden'
+      : 'sidebar'
+  const hidden = isHidden && !isPeek
 
+  return (
+    <aside
+      className={className}
+      onMouseLeave={onMouseLeave}
+      onMouseEnter={onMouseEnter}
+      aria-hidden={hidden || undefined}
+      inert={hidden || undefined}
+    >
       <nav className="sidebar-nav">
         {navItems.map((item) => (
           <NavLink
@@ -43,7 +64,10 @@ function Sidebar({ estimatedCost }: SidebarProps) {
             }
           >
             <span className="nav-dot"></span>
-            {item.label}
+            <span className="nav-label">{item.label}</span>
+            {item.path === '/notifications' && unreadCount > 0 && (
+              <span className="nav-badge">{unreadCount}</span>
+            )}
           </NavLink>
         ))}
       </nav>
@@ -56,30 +80,13 @@ function Sidebar({ estimatedCost }: SidebarProps) {
           <div className="budget-progress">
             <div
               className="budget-progress-fill"
-              style={{ width: `${budgetUsedPercentage}%` }}
+              style={{ width: `${budgetRemainingPercentage}%` }}
             ></div>
           </div>
 
           <span>${remainingBudget.toFixed(2)} remaining</span>
-        </section>
 
-        <section className="user-card">
-          <div className="user-avatar">
-            {user?.firstName?.charAt(0) ?? 'U'}
-            {user?.lastName?.charAt(0) ?? ''}
-          </div>
-
-          <div>
-            <strong>
-              {[user?.firstName, user?.lastName]
-                .filter(Boolean)
-                .join(' ') || 'Stocker User'}
-            </strong>
-            <p>{user?.email ?? ''}</p>
-          </div>
-          <button type="button" onClick={logout}>
-            Log out
-          </button>
+          <ExportSpendingReportButton />
         </section>
       </div>
     </aside>

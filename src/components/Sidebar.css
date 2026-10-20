@@ -1,52 +1,72 @@
 .sidebar {
   width: 320px;
-  min-height: 100vh;
-  background: #ffffff;
-  border-right: 1px solid #dfe5dc;
-  padding: 32px 20px 24px;
+  position: sticky;
+  top: 64px;
+  align-self: flex-start;
+  height: calc(100vh - 64px);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 24px 20px 20px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  flex-shrink: 0;
+  overflow: hidden;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    width 0.25s ease,
+    padding 0.25s ease,
+    opacity 0.2s ease,
+    visibility 0s;
 }
 
-.sidebar-logo {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 34px;
-  padding: 0 12px;
+.sidebar--hidden {
+  width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  border-right-color: transparent;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    width 0.25s ease,
+    padding 0.25s ease,
+    opacity 0.2s ease,
+    visibility 0s linear 0.25s;
 }
 
-.logo-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: #198754;
-  position: relative;
+.sidebar--peek {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  bottom: 0;
+  z-index: 50;
+  box-shadow: 8px 0 24px rgba(23, 48, 34, 0.12);
+  animation: sidebar-slide-in 0.22s ease;
 }
 
-.logo-icon::after {
-  content: '';
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  background: #ffffff;
-  position: absolute;
-  top: 15px;
-  left: 15px;
+.sidebar--peek-closing {
+  transform: translateX(-24px);
+  opacity: 0;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
-.sidebar-logo span {
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: 4px;
-  color: #173022;
+.sidebar-hover-zone {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  width: 48px;
+  bottom: 0;
+  z-index: 40;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
+  width: 280px;
 }
 
 .sidebar-nav-item {
@@ -54,11 +74,11 @@
   box-sizing: border-box;
   border: none;
   background: transparent;
-  color: #516456;
-  font-size: 17px;
+  color: var(--text-muted-2);
+  font-size: 16px;
   font-weight: 600;
-  padding: 16px 18px;
-  border-radius: 14px;
+  padding: 12px 18px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -68,36 +88,53 @@
 }
 
 .sidebar-nav-item:hover {
-  background: #f2f5f1;
+  background: var(--surface-3);
 }
 
 .sidebar-nav-item.active {
-  background: #e8eee8;
-  color: #198754;
+  background: var(--surface-3);
+  color: var(--accent);
 }
 
 .nav-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #d9e1d7;
+  background: var(--border-strong);
   flex-shrink: 0;
 }
 
 .sidebar-nav-item.active .nav-dot {
-  background: #198754;
+  background: var(--accent);
+}
+
+.nav-label {
+  white-space: nowrap;
+}
+
+.nav-badge {
+  margin-left: auto;
+  min-width: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .sidebar-bottom {
   margin-top: auto;
+  width: 280px;
 }
 
 .budget-card {
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
   border-radius: 20px;
-  padding: 20px;
-  margin-bottom: 22px;
+  padding: 18px;
+  margin-bottom: 0;
 }
 
 .budget-card p {
@@ -123,7 +160,7 @@
 .budget-progress-fill {
   width: 56%;
   height: 100%;
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .budget-card span {
@@ -131,33 +168,30 @@
   font-weight: 600;
 }
 
-.user-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 8px;
+.budget-card .export-report {
+  margin-top: 14px;
 }
 
-.user-avatar {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: #edf2ec;
-  color: #198754;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
+@keyframes sidebar-slide-in {
+  from {
+    transform: translateX(-16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
-.user-card strong {
-  display: block;
-  color: #173022;
-  margin-bottom: 4px;
-}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sidebar--hidden {
+    transition: none;
+  }
 
-.user-card p {
-  margin: 0;
-  color: #8a9a8d;
-  font-size: 14px;
+  .sidebar--peek,
+  .sidebar--peek-closing {
+    animation: none;
+    transition: none;
+  }
 }
