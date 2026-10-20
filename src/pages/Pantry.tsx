@@ -6,7 +6,7 @@ import Loading from '../components/Loading'
 import { useUser } from '../context/UserContext'
 import type { ShoppingItem } from '../App'
 import { parsePantryExport } from '../lib/pantryImportExport'
-import type { PantryExportItem } from "../lib/pantryImportExport";
+import type { PantryExportItem } from '../lib/pantryImportExport';
 
 interface PantryProps {
   onAddToShoppingList: (name: string, productId?: string) => void
@@ -230,7 +230,7 @@ function Pantry({
   const [expandedNutritionId, setExpandedNutritionId] = useState<string | null>(null)
   const nutritionAbortRef = useRef<AbortController | null>(null)
   const productSearchRef = useRef<HTMLDivElement>(null)
-  const importFileRef = useRef<HTMLInputElement(null)
+  const importFileRef = useRef<HTMLInputElement>(null)
   const [importExportMessage, setImportExportMessage] = useState('')
   const [importExportBusy, setImportExportBusy] = useState(false)
 
@@ -432,6 +432,115 @@ function Pantry({
       loadPantry()
     }
   }, [user])
+
+  const handleImportFileSelected = async (
+      event: React.ChangeEvent<HTMLInputElement>,
+  )=> {
+    const file = event.target.files?.[0]
+
+    event.target.value = ''
+
+    if (!file) {
+      return
+    }
+
+    if (!user) {
+      setImportExportMessage('You must be signed in to import a pantry')
+      return
+    }
+
+    setImportExportMessage('')
+    setImportExportBusy(true)
+
+    try {
+      const fileContents = await file.text()
+      const backup = parsePantryExport(fileContents)
+
+      const confirmed = window.confirm(
+          `Import ${backup.items.length} pantry ${
+              backup.items.length === 1 ? 'item' : 'items'
+          }?\n\nThis will replace your entire current pantry. This cannot be undone. Are you sure?`
+      )
+
+      if (!confirmed) {
+        return
+      }
+
+      const resolvedItems = await Promise.all(
+          backup.items.map(async(item: PantryExportItem) => {
+            const response = await fetch(
+                `http://localhost:8082/products/search?query=${encodeURIComponent(item.productName)}`,
+            )
+
+            if (!response.ok) {
+              throw new Error(`Could not find product "${item.productName}".`)
+            }
+
+            const products: ProductApiItem[] = await response.json()
+            const matchingProduct = products.find(
+                (product) =>
+                    product.productName.trim().toLowerCase() ===
+                    item.productName.trim().toLowerCase() &&
+                    getProductSize(product).trim().toLowerCase() ===
+                    item.unit.trim().toLowerCase(),
+            )
+
+            if (!matchingProduct) {
+              throw new Error(`Could not find an exact catalog match for "${item.productName}" (${item.unit}) Your pantry has not been replaced`,)
+            }
+
+            return {
+              product_id: matchingProduct.productId,
+              quantity: item.quantity,
+            }
+          }),
+      )
+
+      const productIds = resolvedItems.map((item) => item.product_id)
+
+      if (new Set(productIds).size !== productIds.length) {
+        throw new Error('The backup contains duplicate products. Please correct the backup before importing.',)
+      }
+
+      const response = await fetch(
+          `http://localhost:8087/pantry-items/import?userId=${encodeURIComponent(user.id)}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(resolvedItems),
+          },
+      )
+
+      if (!response.ok) {
+        const responseText = await response.text()
+        throw new Error(
+            responseText || 'The server could not replace your pantry.',
+        )
+      }
+
+      await loadPantry()
+      clearSelection()
+      setExpandedNutritionId(null)
+      setNutritionById({})
+      setImportExportMessage(`Successfully imported ${resolvedItems.length} pantry ${
+              resolvedItems.length === 1 ? 'item' : 'items'
+          }.`,
+      )
+    } catch (err) {
+      console.error(err)
+      setImportExportMessage(
+          err instanceof Error ? err.message : 'Unable to import your pantry.',
+      )
+    } finally {
+      setImportExportBusy(false)
+    }
+  }
+
+  const handleImportPantry = () => {
+    importFileRef.current?.click()
+  }
 
   const handleProductSearch = async (value: string) => {
     setNewItemName(value)
@@ -676,6 +785,12 @@ function Pantry({
         {loading && <Loading message="Loading your pantry..." fullScreen={false} />}
         {error && <p>{error}</p>}
 
+        {importExportMessage && (
+            <p role="status" aria-live="polite">
+              {importExportMessage}
+            </p>
+        )}
+
         {!loading && (
           <section className="pantry-card">
         <div className="pantry-toolbar">
@@ -717,6 +832,33 @@ function Pantry({
           >
             {groupByCategory ? 'Sort Alphabetically' : 'Group by Category'}
           </button>
+
+          <button
+              type="button"
+              className="view-toggle-button"
+              onClick={handleExportPantry}
+              disabled={loading || importExportBusy}
+          >
+            Export Pantry
+          </button>
+
+          <button
+              type="button"
+              className="view-toggle-button"
+              onClick={handleImportPantry}
+              disabled={loading || importExportBusy || !user}
+          >
+            {importExportBusy ? 'Importing...' : 'Import Pantry'}
+          </button>
+
+          <input
+              ref={importFileRef}
+              type="file"
+              accept=".json,application/json"
+              aria-label="Select pantry backup file"
+              hidden
+              onChange={handleImportFileSelected}
+          />
 
           <button
             type="button"
