@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useShoppingList } from '../context/ShoppingListContext'
 import type { ItemPrices, ShoppingItem } from '../context/ShoppingListContext'
@@ -48,7 +48,6 @@ function ItemPriceCell({ item, prices }: { item: ShoppingItem; prices: ItemPrice
 }
 
 function ShoppingList() {
-  const navigate = useNavigate()
   const { user } = useUser()
   const { accessToken } = useAuth()
   const { items, prices, estimatedCost, addItem, removeItem, toggleCompleted, renameItem, error, loaded } = useShoppingList()
@@ -471,21 +470,6 @@ function ShoppingList() {
           </button>
 
           {completionMessage && <p className="completion-message">{completionMessage}</p>}
-
-          <button
-            type="button"
-            className="compare-stores-button"
-            onClick={() => navigate('/store-recommendations')}
-            disabled={items.length === 0}
-          >
-            Compare Stores
-          </button>
-
-          <p className="compare-help">
-            Find the cheapest way to buy your shopping list.
-          </p>
-
-
         </aside>
       </div>
     </main>

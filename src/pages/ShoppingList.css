@@ -335,34 +335,6 @@
   cursor: not-allowed;
 }
 
-.compare-stores-button {
-  width: 100%;
-  padding: 18px;
-  border: none;
-  border-radius: 16px;
-  background: var(--accent);
-  color: #ffffff;
-  font-size: 18px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.compare-stores-button:hover:not(:disabled) {
-  background: var(--accent-hover);
-}
-
-.compare-stores-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.compare-help {
-  margin: 0;
-  text-align: center;
-  color: var(--text-faint);
-  font-size: 15px;
-}
-
 .completion-message {
   margin: 0;
   padding: 14px 16px;

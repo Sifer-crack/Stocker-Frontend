@@ -8,7 +8,6 @@ import ShoppingList from './pages/ShoppingList'
 import ShoppingItemPage from './pages/ShoppingItemPage'
 import FavoriteStores from './pages/FavoriteStores'
 import Notifications from './pages/Notifications'
-import StoreRecommendations from './pages/StoreRecommendations'
 import Sidebar from './components/Sidebar'
 import Loading from './components/Loading'
 import AppTopBar from './components/AppTopBar'
@@ -17,7 +16,6 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { useAuth } from './context/AuthContext'
 import { useShoppingList } from './context/ShoppingListContext'
 import './App.css'
-import ShoppingRoute from './pages/ShoppingRoute'
 import Pantry from './pages/Pantry'
 import Account from './pages/Account'
 import { LandingPage } from './landing-page'
@@ -112,11 +110,6 @@ function AppLayout() {
 function App() {
   const { accessToken, loading } = useAuth()
   const { items, estimatedCost, addItem } = useShoppingList()
-  const [selectedOption, setSelectedOption] = useState('')
-
-  const handleChooseOption = (option: string) => {
-    setSelectedOption(option)
-  }
 
   if (loading) {
     return <Loading message="Checking your session..." />
@@ -166,22 +159,6 @@ function App() {
         <Route path="/shopping-list/:itemId" element={<ShoppingItemPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/favorite-stores" element={<FavoriteStores />} />
-        <Route
-          path="/store-recommendations"
-          element={
-            <StoreRecommendations items={items} onChooseOption={handleChooseOption} />
-          }
-        />
-        <Route
-          path="/shopping-route"
-          element={
-            selectedOption === '' ? (
-              <Navigate to="/store-recommendations" replace />
-            ) : (
-              <ShoppingRoute selectedOption={selectedOption} />
-            )
-          }
-        />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/account" element={<Account />} />
       </Route>
