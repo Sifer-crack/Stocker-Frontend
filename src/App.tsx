@@ -143,7 +143,7 @@ function App() {
     name: string,
     productId?: string
   ) => {
-    if (!user.id) {
+    if (!user || !user.id) {
       console.error('You must be signed in to add to shopping list.')
       return
     }
