@@ -5,6 +5,8 @@ import './Pantry.css'
 import Loading from '../components/Loading'
 import { useUser } from '../context/UserContext'
 import type { ShoppingItem } from '../App'
+import { parsePantryExport } from '../lib/pantryImportExport'
+import type { PantryExportItem } from "../lib/pantryImportExport";
 
 interface PantryProps {
   onAddToShoppingList: (name: string, productId?: string) => void
@@ -228,6 +230,9 @@ function Pantry({
   const [expandedNutritionId, setExpandedNutritionId] = useState<string | null>(null)
   const nutritionAbortRef = useRef<AbortController | null>(null)
   const productSearchRef = useRef<HTMLDivElement>(null)
+  const importFileRef = useRef<HTMLInputElement(null)
+  const [importExportMessage, setImportExportMessage] = useState('')
+  const [importExportBusy, setImportExportBusy] = useState(false)
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -330,6 +335,46 @@ function Pantry({
         newItems.length === 1 ? 'item' : 'items'
       } added to your shopping list.`
     )
+  }
+
+  const handleExportPantry = () => {
+    try {
+      setImportExportMessage('')
+
+      const backup = {
+        format: 'stocker-pantry',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        items: pantryItems.map((item) => ({
+          productName: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          category: item.category,
+        })),
+      }
+
+      const blob = new Blob(
+          [JSON.stringify(backup, null, 2)],
+          { type: 'application/json' },
+      )
+
+      const downloadUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+
+      link.href = downloadUrl
+      link.download = `stocker-pantry-${new Date().toISOString().slice(0, 10)}.json`
+
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+
+      URL.revokeObjectURL(downloadUrl)
+
+      setImportExportMessage('Pantry exported successfully')
+    } catch (err) {
+      console.error(err)
+      setImportExportMessage('Unable to export your pantry')
+    }
   }
 
   const loadPantry = async () => {
