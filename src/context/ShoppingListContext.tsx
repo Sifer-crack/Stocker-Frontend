@@ -16,6 +16,7 @@ export interface ShoppingItem {
   id: string
   name: string
   quantity: number
+  category: string | null
   /** Local only: the backend has no check-off yet, so this is remembered in this browser. */
   completed: boolean
   createdAt: string
@@ -233,6 +234,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
         id: item.id,
         name: item.name,
         quantity: item.quantity,
+        category: item.category,
         completed: completed.has(item.id),
         createdAt: item.createdAt,
       }))

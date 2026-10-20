@@ -464,6 +464,18 @@
   background: #e8ede6;
 }
 
+.shopping-view-toggle-button.active {
+  background: #173022;
+  color: #f7f8f5;
+}
+
+.shopping-category-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 28px 16px;
+}
+
 .shopping-category-group {
   margin-bottom: 24px;
 }

@@ -60,6 +60,9 @@ function ShoppingList() {
   const [completing, setCompleting] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
+  const [groupByCategory, setGroupByCategory] = useState(false)
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const productSearchRef = useRef<HTMLDivElement>(null)
   const tokenRef = useRef(accessToken)
   useLayoutEffect(() => {
@@ -185,6 +188,103 @@ function ShoppingList() {
       ? 0
       : (completedCount / items.length) * 100
 
+  const categoryOf = (item: ShoppingItem) => item.category?.trim() || 'Uncategorised'
+  const availableCategories = Array.from(new Set(items.map(categoryOf))).sort((a, b) => a.localeCompare(b))
+  const filteredItems =
+    selectedCategories.length === 0
+      ? items
+      : items.filter((item) => selectedCategories.includes(categoryOf(item)))
+  const groupedItems = filteredItems.reduce<Record<string, ShoppingItem[]>>((groups, item) => {
+    const category = categoryOf(item)
+    groups[category] = [...(groups[category] ?? []), item]
+    return groups
+  }, {})
+  const sortedCategories = Object.keys(groupedItems).sort((a, b) => a.localeCompare(b))
+  Object.values(groupedItems).forEach((categoryItems) => {
+    categoryItems.sort((a, b) => a.name.localeCompare(b.name))
+  })
+  const sortedItems = [...filteredItems].sort((a, b) => a.name.localeCompare(b.name))
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategories((previous) =>
+      previous.includes(category)
+        ? previous.filter((selected) => selected !== category)
+        : [...previous, category],
+    )
+  }
+
+  const renderItem = (item: ShoppingItem) => (
+    <li key={item.id} className="shopping-item">
+      <div className="shopping-item-info">
+        <button
+          type="button"
+          className={`item-checkbox ${item.completed ? 'completed' : ''}`}
+          onClick={() => toggleCompleted(item.id)}
+          aria-label={`Mark ${item.name} as ${
+            item.completed ? 'not completed' : 'completed'
+          }`}
+        />
+
+        <div>
+          {editingId === item.id ? (
+            <input
+              className="item-rename-input"
+              value={editName}
+              autoFocus
+              aria-label={`New name for ${item.name}`}
+              onChange={(event) => setEditName(event.target.value)}
+              onBlur={() => setEditingId(null)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  renameItem(item.id, editName)
+                  setEditingId(null)
+                } else if (event.key === 'Escape') {
+                  setEditingId(null)
+                }
+              }}
+            />
+          ) : (
+            <strong>
+              <Link to={`/shopping-list/${item.id}`} className="item-name-link">
+                {item.name}
+              </Link>
+            </strong>
+          )}
+          <p>Qty {item.quantity}</p>
+        </div>
+      </div>
+
+      <div className="shopping-item-actions">
+        <ItemPriceCell item={item} prices={prices[item.id]} />
+
+        <Link to={`/shopping-list/${item.id}`} className="item-compare-link">
+          Compare
+        </Link>
+
+        <button
+          type="button"
+          // Keeps the input focused, so its blur doesn't cancel the edit before this click saves it.
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            if (editingId === item.id) {
+              renameItem(item.id, editName)
+              setEditingId(null)
+            } else {
+              setEditName(item.name)
+              setEditingId(item.id)
+            }
+          }}
+        >
+          {editingId === item.id ? 'Save' : 'Rename'}
+        </button>
+
+        <button type="button" onClick={() => removeItem(item.id)}>
+          Remove
+        </button>
+      </div>
+    </li>
+  )
+
   return (
     <main className="shopping-page">
       <header className="shopping-header">
@@ -255,82 +355,69 @@ function ShoppingList() {
           ) : items.length === 0 ? (
             <p className="empty-list">No items added yet.</p>
           ) : (
-            <ul className="shopping-items">
-              {items.map((item) => (
-                <li key={item.id} className="shopping-item">
-                  <div className="shopping-item-info">
+            <>
+              <div className="shopping-list-toolbar">
+                <button
+                  type="button"
+                  className="shopping-view-toggle-button"
+                  onClick={() => setGroupByCategory(!groupByCategory)}
+                >
+                  {groupByCategory ? 'Sort Alphabetically' : 'Group by Category'}
+                </button>
+
+                <button
+                  type="button"
+                  className="shopping-view-toggle-button"
+                  onClick={() => setFiltersOpen(!filtersOpen)}
+                >
+                  Apply Filters
+                  {selectedCategories.length > 0 && ` (${selectedCategories.length})`}
+                </button>
+              </div>
+
+              {filtersOpen && (
+                <div className="shopping-category-filter">
+                  {availableCategories.map((category) => (
                     <button
+                      key={category}
                       type="button"
-                      className={`item-checkbox ${item.completed ? 'completed' : ''}`}
-                      onClick={() => toggleCompleted(item.id)}
-                      aria-label={`Mark ${item.name} as ${
-                        item.completed ? 'not completed' : 'completed'
+                      className={`shopping-view-toggle-button ${
+                        selectedCategories.includes(category) ? 'active' : ''
                       }`}
-                    />
+                      aria-pressed={selectedCategories.includes(category)}
+                      onClick={() => toggleCategory(category)}
+                    >
+                      {category}
+                    </button>
+                  ))}
 
-                    <div>
-                      {editingId === item.id ? (
-                        <input
-                          className="item-rename-input"
-                          value={editName}
-                          autoFocus
-                          aria-label={`New name for ${item.name}`}
-                          onChange={(event) => setEditName(event.target.value)}
-                          onBlur={() => setEditingId(null)}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter') {
-                              renameItem(item.id, editName)
-                              setEditingId(null)
-                            } else if (event.key === 'Escape') {
-                              setEditingId(null)
-                            }
-                          }}
-                        />
-                      ) : (
-                        <strong>
-                          <Link to={`/shopping-list/${item.id}`} className="item-name-link">
-                            {item.name}
-                          </Link>
-                        </strong>
-                      )}
-                      <p>Qty {item.quantity}</p>
+                  {selectedCategories.length > 0 && (
+                    <button
+                      type="button"
+                      className="shopping-view-toggle-button"
+                      onClick={() => setSelectedCategories([])}
+                    >
+                      Clear filters
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {filteredItems.length === 0 ? (
+                <p className="empty-list">No shopping items match your selected filters.</p>
+              ) : groupByCategory ? (
+                <div className="shopping-grouped-list">
+                  {sortedCategories.map((category) => (
+                    <div key={category} className="shopping-category-group">
+                      <h3 className="shopping-category-heading">{category}</h3>
+                      <ul className="shopping-items">{groupedItems[category].map(renderItem)}</ul>
                     </div>
-                  </div>
-
-                  <div className="shopping-item-actions">
-                    <ItemPriceCell item={item} prices={prices[item.id]} />
-
-                    <Link to={`/shopping-list/${item.id}`} className="item-compare-link">
-                      Compare
-                    </Link>
-
-                    <button
-                      type="button"
-                      // Keeps the input focused, so its blur doesn't cancel the edit before this click saves it.
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => {
-                        if (editingId === item.id) {
-                          renameItem(item.id, editName)
-                          setEditingId(null)
-                        } else {
-                          setEditName(item.name)
-                          setEditingId(item.id)
-                        }
-                      }}
-                    >
-                      {editingId === item.id ? 'Save' : 'Rename'}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item.id)}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  ))}
+                </div>
+              ) : (
+                <ul className="shopping-items">{sortedItems.map(renderItem)}</ul>
+              )}
+            </>
           )}
         </section>
 
