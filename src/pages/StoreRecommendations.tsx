@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './StoreRecommendations.css'
-import type { ShoppingItem } from '../App'
+import type { ShoppingItem } from '../context/ShoppingListContext'
 
 interface StoreRecommendationsProps {
   items: ShoppingItem[]

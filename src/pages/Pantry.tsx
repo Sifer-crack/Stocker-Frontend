@@ -3,40 +3,43 @@ import { fetchNutritionForFood } from '../lib/nutrition'
 import type { NutritionResult } from '../lib/nutrition'
 import './Pantry.css'
 import Loading from '../components/Loading'
+import { useAuth } from '../context/AuthContext'
+import { useNotifications } from '../context/NotificationsContext'
 import { useUser } from '../context/UserContext'
-import type { ShoppingItem } from '../App'
-import { parsePantryExport } from '../lib/pantryImportExport'
-import type { PantryExportItem } from '../lib/pantryImportExport';
+import type { ShoppingItem } from '../context/ShoppingListContext'
+import {
+  addPantryItem,
+  deletePantryItem,
+  getProduct,
+  listPantry,
+  searchProducts,
+  setPantryExpiry,
+  updatePantryQuantity,
+} from '../lib/pantryApi'
+import type { ProductApiItem } from '../lib/pantryApi'
 
 interface PantryProps {
-  onAddToShoppingList: (name: string, productId?: string) => void
+  onAddToShoppingList: (name: string, productId?: string | null) => void
   shoppingListItems: ShoppingItem[]
-}
-
-interface PantryApiItem {
-  pantry_item_id: string
-  user_id: string
-  product_id: string
-  quantity: number
-}
-
-interface ProductApiItem {
-  productId: string
-  productName: string
-  groceryType: string | null
-  sellingWeightKg: number | null
-  sellingVolumeL: number | null
 }
 
 interface PantryDisplayItem {
   id: string
-  productId: string
+  productId: string | null
   name: string
   quantity: number
   unit: string
   lowStock: boolean
   category: string | null
+  expirationDate: string | null
+  notifyDaysBefore: number | null
 }
+
+/** The optional expiry inputs as the API wants them; a reminder without a date is not allowed, so it is dropped. */
+const parseExpiry = (expirationDate: string, notifyDaysBefore: string) => ({
+  expirationDate: expirationDate === '' ? null : expirationDate,
+  notifyDaysBefore: expirationDate === '' || notifyDaysBefore === '' ? null : Number(notifyDaysBefore),
+})
 
 const getProductSize = (product: ProductApiItem): string => {
   if (product.sellingWeightKg != null) {
@@ -56,6 +59,10 @@ function PantryItemRow({
   editingItemId,
   editingQuantity,
   setEditingQuantity,
+  editingExpirationDate,
+  setEditingExpirationDate,
+  editingNotifyDays,
+  setEditingNotifyDays,
   expandedNutritionId,
   nutritionLoadingId,
   nutritionErrorById,
@@ -71,6 +78,10 @@ function PantryItemRow({
   editingItemId: string | null
   editingQuantity: number
   setEditingQuantity: (quantity: number) => void
+  editingExpirationDate: string
+  setEditingExpirationDate: (value: string) => void
+  editingNotifyDays: string
+  setEditingNotifyDays: (value: string) => void
   expandedNutritionId: string | null
   nutritionLoadingId: string | null
   nutritionErrorById: Record<string, string>
@@ -93,16 +104,46 @@ function PantryItemRow({
         <div>
         <h3>{item.name}</h3>
         {editingItemId === item.id ? (
-          <input
-            type="number"
-            min="1"
-            value={editingQuantity}
-            onChange={(event) =>
-              setEditingQuantity(Number(event.target.value))
-            }
-          />
+          <>
+            <input
+              type="number"
+              min="1"
+              value={editingQuantity}
+              onChange={(event) =>
+                setEditingQuantity(Number(event.target.value))
+              }
+            />
+            <label className="expiry-field">
+              <span>Expires on</span>
+              <input
+                type="date"
+                value={editingExpirationDate}
+                onChange={(event) => setEditingExpirationDate(event.target.value)}
+              />
+            </label>
+            <label className="expiry-field">
+              <span>Remind me (days before)</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="3"
+                value={editingNotifyDays}
+                disabled={editingExpirationDate === ''}
+                onChange={(event) => setEditingNotifyDays(event.target.value)}
+              />
+            </label>
+          </>
         ) : (
-          <p>Quantity: {item.quantity}</p>
+          <>
+            <p>Quantity: {item.quantity}</p>
+            {item.expirationDate && (
+              <p className="pantry-expiry">
+                Expires {new Date(`${item.expirationDate}T00:00:00`).toLocaleDateString()}
+                {item.notifyDaysBefore !== null && ` (reminder ${item.notifyDaysBefore} days before)`}
+              </p>
+            )}
+          </>
         )}
 
         {item.lowStock && (
@@ -194,6 +235,8 @@ function Pantry({
   shoppingListItems,
 }: PantryProps) {
   const { user } = useUser()
+  const { accessToken } = useAuth()
+  const { refresh: refreshNotifications } = useNotifications()
   const [pantryItems, setPantryItems] = useState<PantryDisplayItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -202,6 +245,10 @@ function Pantry({
   const [newItemQuantity, setNewItemQuantity] = useState(1)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editingQuantity, setEditingQuantity] = useState(1)
+  const [newExpirationDate, setNewExpirationDate] = useState('')
+  const [newNotifyDays, setNewNotifyDays] = useState('')
+  const [editingExpirationDate, setEditingExpirationDate] = useState('')
+  const [editingNotifyDays, setEditingNotifyDays] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [searchField, setSearchField] = useState<'name' | 'quantity'>('name')
   const [groupByCategory, setGroupByCategory] = useState(false)
@@ -224,20 +271,21 @@ function Pantry({
 
   const [productResults, setProductResults] = useState<ProductApiItem[]>([])
   const [selectedProduct, setSelectedProduct] = useState<ProductApiItem | null>(null)
+  /** Set when the user chose to add what they typed as a new item that is not in the catalog. */
+  const [customName, setCustomName] = useState<string | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [nutritionById, setNutritionById] = useState<Record<string, NutritionResult>>({})
   const [nutritionLoadingId, setNutritionLoadingId] = useState<string | null>(null)
   const [nutritionErrorById, setNutritionErrorById] = useState<Record<string, string>>({})
   const [expandedNutritionId, setExpandedNutritionId] = useState<string | null>(null)
   const nutritionAbortRef = useRef<AbortController | null>(null)
   const productSearchRef = useRef<HTMLDivElement>(null)
-  const importFileRef = useRef<HTMLInputElement>(null)
-  const [importExportMessage, setImportExportMessage] = useState('')
-  const [importExportBusy, setImportExportBusy] = useState(false)
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (productSearchRef.current && !productSearchRef.current.contains(event.target as Node)) {
         setProductResults([])
+        setMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -337,46 +385,6 @@ function Pantry({
     )
   }
 
-  const handleExportPantry = () => {
-    try {
-      setImportExportMessage('')
-
-      const backup = {
-        format: 'stocker-pantry',
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        items: pantryItems.map((item) => ({
-          productName: item.name,
-          quantity: item.quantity,
-          unit: item.unit,
-          category: item.category,
-        })),
-      }
-
-      const blob = new Blob(
-          [JSON.stringify(backup, null, 2)],
-          { type: 'application/json' },
-      )
-
-      const downloadUrl = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-
-      link.href = downloadUrl
-      link.download = `stocker-pantry-${new Date().toISOString().slice(0, 10)}.json`
-
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-
-      URL.revokeObjectURL(downloadUrl)
-
-      setImportExportMessage('Pantry exported successfully')
-    } catch (err) {
-      console.error(err)
-      setImportExportMessage('Unable to export your pantry')
-    }
-  }
-
   const loadPantry = async () => {
     try {
       setLoading(true)
@@ -388,41 +396,30 @@ function Pantry({
         return
       }
 
-      const pantryResponse = await fetch(
-        `http://localhost:8087/pantry-items?userId=${user.id}`
-      )
-      if (!pantryResponse.ok) {
-        throw new Error('Could not load pantry')
-      }
-      const pantryData: PantryApiItem[] = await pantryResponse.json()
+      const pantryData = await listPantry(user.id, accessToken)
 
       const displayItems = await Promise.all(
         pantryData.map(async (pantryItem) => {
-          const productResponse = await fetch(
-            `http://localhost:8082/products/${pantryItem.product_id}`
-          )
-
-          if (!productResponse.ok) {
-            throw new Error('Could not load product')
-          }
-
-          const product: ProductApiItem = await productResponse.json()
+          // Free-text items have no catalog entry; everything about them is on the pantry row itself.
+          const product = pantryItem.product_id ? await getProduct(pantryItem.product_id, accessToken) : null
 
           return {
             id: pantryItem.pantry_item_id,
             productId: pantryItem.product_id,
-            name: product.productName,
+            name: product?.productName ?? pantryItem.name ?? 'Pantry item',
             quantity: pantryItem.quantity,
-            unit: getProductSize(product),
+            unit: product ? getProductSize(product) : (pantryItem.unit ?? ''),
             lowStock: pantryItem.quantity <= 1,
-            category: product.groceryType,
+            category: product?.groceryType ?? pantryItem.category ?? null,
+            expirationDate: pantryItem.expirationDate ?? null,
+            notifyDaysBefore: pantryItem.notifyDaysBefore ?? null,
           }
         })
       )
       setPantryItems(displayItems)
     } catch (err) {
       console.error(err)
-      setError('Unable to load pantry from the server.')
+      setError(err instanceof Error ? err.message : 'Unable to load pantry from the server.')
     } finally {
       setLoading(false)
     }
@@ -433,178 +430,76 @@ function Pantry({
     }
   }, [user])
 
-  const handleImportFileSelected = async (
-      event: React.ChangeEvent<HTMLInputElement>,
-  )=> {
-    const file = event.target.files?.[0]
-
-    event.target.value = ''
-
-    if (!file) {
-      return
-    }
-
-    if (!user) {
-      setImportExportMessage('You must be signed in to import a pantry')
-      return
-    }
-
-    setImportExportMessage('')
-    setImportExportBusy(true)
-
-    try {
-      const fileContents = await file.text()
-      const backup = parsePantryExport(fileContents)
-
-      const confirmed = window.confirm(
-          `Import ${backup.items.length} pantry ${
-              backup.items.length === 1 ? 'item' : 'items'
-          }?\n\nThis will replace your entire current pantry. This cannot be undone. Are you sure?`
-      )
-
-      if (!confirmed) {
-        return
-      }
-
-      const resolvedItems = await Promise.all(
-          backup.items.map(async(item: PantryExportItem) => {
-            const response = await fetch(
-                `http://localhost:8082/products/search?query=${encodeURIComponent(item.productName)}`,
-            )
-
-            if (!response.ok) {
-              throw new Error(`Could not find product "${item.productName}".`)
-            }
-
-            const products: ProductApiItem[] = await response.json()
-            const matchingProduct = products.find(
-                (product) =>
-                    product.productName.trim().toLowerCase() ===
-                    item.productName.trim().toLowerCase() &&
-                    getProductSize(product).trim().toLowerCase() ===
-                    item.unit.trim().toLowerCase(),
-            )
-
-            if (!matchingProduct) {
-              throw new Error(`Could not find an exact catalog match for "${item.productName}" (${item.unit}) Your pantry has not been replaced`,)
-            }
-
-            return {
-              product_id: matchingProduct.productId,
-              quantity: item.quantity,
-            }
-          }),
-      )
-
-      const productIds = resolvedItems.map((item) => item.product_id)
-
-      if (new Set(productIds).size !== productIds.length) {
-        throw new Error('The backup contains duplicate products. Please correct the backup before importing.',)
-      }
-
-      const response = await fetch(
-          `http://localhost:8087/pantry-items/import?userId=${encodeURIComponent(user.id)}`,
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(resolvedItems),
-          },
-      )
-
-      if (!response.ok) {
-        const responseText = await response.text()
-        throw new Error(
-            responseText || 'The server could not replace your pantry.',
-        )
-      }
-
-      await loadPantry()
-      clearSelection()
-      setExpandedNutritionId(null)
-      setNutritionById({})
-      setImportExportMessage(`Successfully imported ${resolvedItems.length} pantry ${
-              resolvedItems.length === 1 ? 'item' : 'items'
-          }.`,
-      )
-    } catch (err) {
-      console.error(err)
-      setImportExportMessage(
-          err instanceof Error ? err.message : 'Unable to import your pantry.',
-      )
-    } finally {
-      setImportExportBusy(false)
-    }
-  }
-
-  const handleImportPantry = () => {
-    importFileRef.current?.click()
-  }
+  const productSearchAbortRef = useRef<AbortController | null>(null)
 
   const handleProductSearch = async (value: string) => {
     setNewItemName(value)
     setSelectedProduct(null)
+    setCustomName(null)
+    setMenuOpen(true)
+    // Typing again supersedes the search still in flight.
+    productSearchAbortRef.current?.abort()
 
     if (value.trim().length < 2) {
       setProductResults([])
       return
     }
 
+    const controller = new AbortController()
+    productSearchAbortRef.current = controller
     try {
-      const response = await fetch(
-        `http://localhost:8082/products/search?query=${encodeURIComponent(value)}`
-      )
+      const products = await searchProducts(value, accessToken, controller.signal)
 
-      if (!response.ok) {
-        throw new Error('Could not search products')
-      }
-
-      const products: ProductApiItem[] = await response.json()
-
-      setProductResults(products)
+      if (!controller.signal.aborted) setProductResults(products)
     } catch (err) {
+      if (controller.signal.aborted) return
       console.error(err)
       setProductResults([])
     }
   }
 
+  /** Opens the add form with whatever was typed in the pantry search bar already searched for. */
+  const openAddItem = () => {
+    setAddItemOpen(true)
+    const typed = searchInput.trim()
+    if (typed !== '') void handleProductSearch(typed)
+  }
+
   const handleAddPantryItem = async () => {
-    if (!user || !selectedProduct || newItemQuantity < 1) {
+    if (!user || (!selectedProduct && customName === null) || newItemQuantity < 1) {
       return
     }
 
     try {
       setError('')
 
-      const params = new URLSearchParams({
-        userId: user.id,
-        productId: selectedProduct.productId,
-        quantity: String(newItemQuantity),
-      })
-
-      const response = await fetch(
-        `http://localhost:8087/pantry-items?${params.toString()}`,
+      const { expirationDate, notifyDaysBefore } = parseExpiry(newExpirationDate, newNotifyDays)
+      await addPantryItem(
         {
-          method: 'POST',
-        }
+          userId: user.id,
+          ...(selectedProduct ? { productId: selectedProduct.productId } : { name: customName ?? '' }),
+          quantity: newItemQuantity,
+          expirationDate: expirationDate ?? undefined,
+          notifyDaysBefore: notifyDaysBefore ?? undefined,
+        },
+        accessToken,
       )
-
-      if (!response.ok) {
-        throw new Error('Could not add pantry item')
-      }
 
       await loadPantry()
 
       setNewItemName('')
       setSelectedProduct(null)
+      setCustomName(null)
       setProductResults([])
       setNewItemQuantity(1)
+      setNewExpirationDate('')
+      setNewNotifyDays('')
       setProductCategoryFilters([])
       setAddItemOpen(false)
+      void refreshNotifications()
     } catch (err) {
       console.error(err)
-      setError('Unable to add pantry item')
+      setError(err instanceof Error ? err.message : 'Unable to add pantry item')
     }
   }
 
@@ -612,32 +507,23 @@ function Pantry({
     try {
       setError('')
 
-      await Promise.all(
-        selectedItemIds.map(async (id) => {
-          const response = await fetch(
-            `http://localhost:8087/pantry-items/${id}`,
-            {
-              method: 'DELETE',
-            }
-          )
-          if (!response.ok) {
-            throw new Error('Could not remove pantry item')
-          }
-        })
-      )
+      await Promise.all(selectedItemIds.map((id) => deletePantryItem(id, accessToken)))
 
       await loadPantry()
       clearSelection()
       setConfirmDeleteOpen(false)
+      void refreshNotifications()
     } catch (err) {
       console.error(err)
-      setError('Unable to remove pantry item.')
+      setError(err instanceof Error ? err.message : 'Unable to remove pantry item.')
     }
   }
 
   const handleStartEdit = (item: PantryDisplayItem) => {
     setEditingItemId(item.id)
     setEditingQuantity(item.quantity)
+    setEditingExpirationDate(item.expirationDate ?? '')
+    setEditingNotifyDays(item.notifyDaysBefore === null ? '' : String(item.notifyDaysBefore))
   }
 
   const handleCancelEdit = () => {
@@ -687,26 +573,18 @@ function Pantry({
     try {
       setError('')
 
-      const params = new URLSearchParams({
-        quantity: String(editingQuantity),
-      })
+      await updatePantryQuantity(id, editingQuantity, accessToken)
 
-      const response = await fetch(
-        `http://localhost:8087/pantry-items/${id}?${params.toString()}`,
-        {
-          method: 'PUT',
-        }
-      )
-
-      if (!response.ok) {
-        throw new Error('Could not update pantry item')
-      }
+      // Sending neither field clears the expiry date.
+      const { expirationDate, notifyDaysBefore } = parseExpiry(editingExpirationDate, editingNotifyDays)
+      await setPantryExpiry(id, expirationDate, notifyDaysBefore, accessToken)
 
       setEditingItemId(null)
       await loadPantry()
+      void refreshNotifications()
     } catch (err) {
       console.error(err)
-      setError('Unable to update pantry item.')
+      setError(err instanceof Error ? err.message : 'Unable to update pantry item.')
     }
   }
 
@@ -785,12 +663,6 @@ function Pantry({
         {loading && <Loading message="Loading your pantry..." fullScreen={false} />}
         {error && <p>{error}</p>}
 
-        {importExportMessage && (
-            <p role="status" aria-live="polite">
-              {importExportMessage}
-            </p>
-        )}
-
         {!loading && (
           <section className="pantry-card">
         <div className="pantry-toolbar">
@@ -834,36 +706,9 @@ function Pantry({
           </button>
 
           <button
-              type="button"
-              className="view-toggle-button"
-              onClick={handleExportPantry}
-              disabled={loading || importExportBusy}
-          >
-            Export Pantry
-          </button>
-
-          <button
-              type="button"
-              className="view-toggle-button"
-              onClick={handleImportPantry}
-              disabled={loading || importExportBusy || !user}
-          >
-            {importExportBusy ? 'Importing...' : 'Import Pantry'}
-          </button>
-
-          <input
-              ref={importFileRef}
-              type="file"
-              accept=".json,application/json"
-              aria-label="Select pantry backup file"
-              hidden
-              onChange={handleImportFileSelected}
-          />
-
-          <button
             type="button"
             className="add-pantry-button add-pantry-button-compact"
-            onClick={() => setAddItemOpen(true)}
+            onClick={openAddItem}
             aria-label="Add Pantry Item"
           >
             <span className="add-pantry-plus">+</span>
@@ -992,7 +837,7 @@ function Pantry({
                     onChange={(event) => handleProductSearch(event.target.value)}
                   />
 
-                  {filteredProductResults.length > 0 && !selectedProduct && (
+                  {menuOpen && newItemName.trim().length >= 2 && !selectedProduct && customName === null && (
                     <div className="product-dropdown">
                       {filteredProductResults.map((product) => (
                         <button
@@ -1005,14 +850,27 @@ function Pantry({
                               `${product.productName} - ${getProductSize(product)}`
                             )
                             setProductResults([])
+                            setMenuOpen(false)
                           }}
                         >
                           <span>{product.productName}</span>
                           <span>{getProductSize(product)}</span>
                         </button>
                       ))}
+                      <button
+                        type="button"
+                        className="product-dropdown-item"
+                        onClick={() => {
+                          setCustomName(newItemName.trim())
+                          setProductResults([])
+                          setMenuOpen(false)
+                        }}
+                      >
+                        <span>Add &quot;{newItemName.trim()}&quot; as a new item</span>
+                      </button>
                     </div>
                   )}
+                  {customName !== null && <p className="pantry-custom-hint">New item, not in the product catalog.</p>}
                 </div>
               </div>
 
@@ -1026,6 +884,30 @@ function Pantry({
                   onChange={(event) =>
                     setNewItemQuantity(Number(event.target.value))
                   }
+                />
+              </div>
+
+              <div className="pantry-filter-modal-field">
+                <label htmlFor="add-item-expiry">Expires on (optional)</label>
+                <input
+                  id="add-item-expiry"
+                  type="date"
+                  value={newExpirationDate}
+                  onChange={(event) => setNewExpirationDate(event.target.value)}
+                />
+              </div>
+
+              <div className="pantry-filter-modal-field">
+                <label htmlFor="add-item-notify">Remind me (days before)</label>
+                <input
+                  id="add-item-notify"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="3"
+                  value={newNotifyDays}
+                  disabled={newExpirationDate === ''}
+                  onChange={(event) => setNewNotifyDays(event.target.value)}
                 />
               </div>
 
@@ -1069,7 +951,7 @@ function Pantry({
                   type="button"
                   className="pantry-filter-done"
                   onClick={handleAddPantryItem}
-                  disabled={!selectedProduct || newItemQuantity < 1}
+                  disabled={(!selectedProduct && customName === null) || newItemQuantity < 1}
                 >
                   Add Pantry Item
                 </button>
@@ -1100,6 +982,10 @@ function Pantry({
                     editingItemId={editingItemId}
                     editingQuantity={editingQuantity}
                     setEditingQuantity={setEditingQuantity}
+                    editingExpirationDate={editingExpirationDate}
+                    setEditingExpirationDate={setEditingExpirationDate}
+                    editingNotifyDays={editingNotifyDays}
+                    setEditingNotifyDays={setEditingNotifyDays}
                     expandedNutritionId={expandedNutritionId}
                     nutritionLoadingId={nutritionLoadingId}
                     nutritionErrorById={nutritionErrorById}
@@ -1122,6 +1008,10 @@ function Pantry({
                 editingItemId={editingItemId}
                 editingQuantity={editingQuantity}
                 setEditingQuantity={setEditingQuantity}
+                    editingExpirationDate={editingExpirationDate}
+                    setEditingExpirationDate={setEditingExpirationDate}
+                    editingNotifyDays={editingNotifyDays}
+                    setEditingNotifyDays={setEditingNotifyDays}
                 expandedNutritionId={expandedNutritionId}
                 nutritionLoadingId={nutritionLoadingId}
                 nutritionErrorById={nutritionErrorById}

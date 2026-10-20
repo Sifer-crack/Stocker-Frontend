@@ -8,8 +8,8 @@
   align-self: flex-start;
   border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: 12px;
-  background: #ffffff;
-  color: #198754;
+  background: var(--surface);
+  color: var(--accent);
   padding: 10px 16px;
   font-size: 14px;
   font-weight: 700;
@@ -18,7 +18,7 @@
 }
 
 .export-report-button:hover {
-  background: #eafaf1;
+  background: var(--accent-soft);
 }
 
 .export-report-button:disabled {
@@ -29,7 +29,7 @@
 .export-report-error {
   margin: 0;
   font-size: 13px;
-  color: #b3261e;
+  color: var(--danger);
 }
 
 .export-report-overlay {
@@ -101,12 +101,12 @@
 .export-report-field input[type='date'],
 .export-report-field select {
   box-sizing: border-box;
-  background: #ffffff;
-  border: 1px solid #e2e8e0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px 14px;
   font-size: 15px;
-  color: #173022;
+  color: var(--text-main);
 }
 
 .export-report-field select {
@@ -144,7 +144,7 @@
 }
 
 .export-report-cancel {
-  border: 1px solid #d5ddd4;
+  border: 1px solid var(--border-strong);
   border-radius: 10px;
   background: transparent;
   color: var(--text-main);
@@ -155,7 +155,7 @@
 }
 
 .export-report-cancel:hover {
-  background: #f1f5f0;
+  background: var(--surface-3);
 }
 
 .export-report-confirm {

@@ -1,21 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { useUser } from '../context/UserContext'
+import { listPantry } from '../lib/pantryApi'
 import { useWeeklySpending } from '../hooks/useWeeklySpending'
 import ExportSpendingReportButton from '../components/ExportSpendingReportButton'
 import './Dashboard.css'
-import type { ShoppingItem } from '../App'
 
 interface DashboardProps {
-  items: ShoppingItem[]
+  items: readonly unknown[]
   estimatedCost: number
-}
-
-interface PantryApiItem {
-  pantry_item_id: string
-  user_id: string
-  product_id: string
-  quantity: number
 }
 
 function Dashboard({
@@ -24,6 +18,11 @@ function Dashboard({
 }: DashboardProps) {
   const navigate = useNavigate()
   const { user } = useUser()
+  const { accessToken } = useAuth()
+  const tokenRef = useRef(accessToken)
+  useLayoutEffect(() => {
+    tokenRef.current = accessToken
+  })
   const { spent } = useWeeklySpending()
   const weeklyBudget = user?.groceryBudget ?? 0
   const [pantryCount, setPantryCount] = useState(0)
@@ -38,15 +37,7 @@ function Dashboard({
 
     const loadPantrySummary = async () => {
       try {
-        const response = await fetch(
-          `http://localhost:8087/pantry-items?userId=${user.id}`
-        )
-
-        if (!response.ok) {
-          throw new Error('Could not load pantry')
-        }
-
-        const pantryItems: PantryApiItem[] = await response.json()
+        const pantryItems = await listPantry(user.id, tokenRef.current)
 
         setPantryCount(pantryItems.length)
         setLowStockCount(

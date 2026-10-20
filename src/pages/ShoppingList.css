@@ -437,47 +437,6 @@
   }
 }
 
-
-
-.shopping-list-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 20px 28px 0;
-}
-
-.shopping-view-toggle-button {
-  padding: 8px 14px;
-  border: 1px solid #173022;
-  border-radius: 6px;
-  background: #f7f8f5;
-  color: #173022;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.shopping-view-toggle-button:hover {
-  background: #e8ede6;
-}
-
-.shopping-category-group {
-  margin-bottom: 24px;
-}
-
-.shopping-category-heading {
-  margin: 0 0 12px;
-  padding: 0 0 8px 16px;
-  border-bottom: 1px solid #d8dfd6;
-  color: #173022;
-  font-size: 1.1rem;
-  font-weight: 600;
-  text-transform: capitalize;
-}
-
 @media (max-width: 420px) {
   .shopping-header-actions {
     flex-direction: column;
@@ -499,4 +458,92 @@
   .shopping-item-info strong {
     font-size: 16px;
   }
+}
+
+.item-name-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.item-name-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.item-compare-link {
+  padding: 8px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.item-price-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.item-price-cell small {
+  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.shopping-item-actions .item-price-status {
+  color: var(--text-faint);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.price-note {
+  margin: -6px 0 16px;
+  color: var(--text-faint);
+  font-size: 14px;
+}
+
+.shopping-header-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.shopping-error {
+  margin: 24px 44px 0;
+}
+
+/* Long names wrap inside their column instead of running over the price next to them. */
+.shopping-item-info > div {
+  min-width: 0;
+}
+
+.shopping-item-info strong,
+.shopping-item-info p,
+.item-price-status,
+.item-price-cell {
+  overflow-wrap: anywhere;
+}
+
+.shopping-item-actions span {
+  white-space: normal;
+  text-align: right;
+}
+
+.shopping-item-actions {
+  min-width: 0;
+  max-width: 45%;
+}
+
+.item-rename-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 4px;
+  padding: 6px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 16px;
 }

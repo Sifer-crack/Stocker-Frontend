@@ -1,6 +1,6 @@
 import { authFetch } from './authFetch'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { API_BASE } from './apiConfig'
 const REPORT_PATH = `${API_BASE}/api/identity/me/spending-report`
 
 export interface SpendingReportItem {
