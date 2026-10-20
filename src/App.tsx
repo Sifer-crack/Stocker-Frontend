@@ -22,20 +22,6 @@ import Pantry from './pages/Pantry'
 import Account from './pages/Account'
 import { LandingPage } from './landing-page'
 import { PricingPage } from './pricing'
-import { useUser } from './context/UserContext'
-import {
-  addShoppingListItem,
-    fetchShoppingList,
-} from './lib/shoppingListApi'
-
-export interface ShoppingItem {
-  name: string
-  productId?: string
-  shoppingListItemId?: string
-  quantity?: number
-  category?: string | null
-  status: string
-}
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
