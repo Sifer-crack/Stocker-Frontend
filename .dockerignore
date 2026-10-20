@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.gitignore
+
+# Local env overrides must not leak into the image; use --build-arg VITE_API_BASE_URL instead.
+.env
+.env.*
+
+Dockerfile
+.dockerignore
+*.log

@@ -5,31 +5,23 @@ import SignUp from './pages/SignUp'
 import OAuthCallback from './pages/OAuthCallback'
 import Dashboard from './pages/Dashboard'
 import ShoppingList from './pages/ShoppingList'
+import ShoppingItemPage from './pages/ShoppingItemPage'
+import FavoriteStores from './pages/FavoriteStores'
+import Notifications from './pages/Notifications'
 import StoreRecommendations from './pages/StoreRecommendations'
 import Sidebar from './components/Sidebar'
 import Loading from './components/Loading'
 import AppTopBar from './components/AppTopBar'
+import NotificationToasts from './components/NotificationToasts'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { useAuth } from './context/AuthContext'
+import { useShoppingList } from './context/ShoppingListContext'
 import './App.css'
 import ShoppingRoute from './pages/ShoppingRoute'
 import Pantry from './pages/Pantry'
 import Account from './pages/Account'
 import { LandingPage } from './landing-page'
-import { useUser } from './context/UserContext'
-import {
-  addShoppingListItem,
-    fetchShoppingList,
-} from './lib/shoppingListApi'
-
-export interface ShoppingItem {
-  name: string
-  productId?: string
-  shoppingListItemId?: string
-  quantity?: number
-  category?: string | null
-  status: string
-}
+import { PricingPage } from './pricing'
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -112,56 +104,15 @@ function AppLayout() {
           <Outlet />
         </div>
       </div>
+      <NotificationToasts />
     </div>
   )
 }
 
 function App() {
   const { accessToken, loading } = useAuth()
-  const [items, setItems] = useState<ShoppingItem[]>([])
+  const { items, estimatedCost, addItem } = useShoppingList()
   const [selectedOption, setSelectedOption] = useState('')
-  const { user } = useUser()
-
-  const itemPrices: Record<string, number> = {
-    milk: 4.80,
-    bread: 3.50,
-    egg: 6.20,
-    eggs: 6.20,
-    cheese: 8.90,
-    butter: 6.50,
-    chicken: 12.40,
-    rice: 4.30,
-    pasta: 3.20,
-    apples: 5.60,
-  }
-  const estimatedCost = items.reduce((total, item) => {
-    const price = itemPrices[item.name.toLowerCase()] ?? 5.00
-    return total + price
-  }, 0)
-
-  const handleAddToShoppingList = async (
-    name: string,
-    productId?: string
-  ) => {
-    if (!user || !user.id) {
-      console.error('You must be signed in to add to shopping list.')
-      return
-    }
-
-    if (!productId) {
-      console.error(`Cannot add "${name}" because no product ID was provided.`,)
-      return
-    }
-
-    try {
-      await addShoppingListItem(user.id, productId, 1)
-      const updatedItems = await fetchShoppingList(user.id)
-
-      setItems(updatedItems)
-    } catch (error) {
-      console.error('Unable to add pantry product to shopping list: ', error)
-    }
-  }
 
   const handleChooseOption = (option: string) => {
     setSelectedOption(option)
@@ -205,21 +156,16 @@ function App() {
         <Route
           path="/pantry"
           element={
-            <Pantry
-              onAddToShoppingList={handleAddToShoppingList}
-              shoppingListItems={items}
-            />
+            <Pantry onAddToShoppingList={addItem} shoppingListItems={items} />
           }
         />
         <Route
           path="/shopping-list"
-          element={
-            <ShoppingList
-              items={items}
-              setItems={setItems}
-            />
-          }
+          element={<ShoppingList />}
         />
+        <Route path="/shopping-list/:itemId" element={<ShoppingItemPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/favorite-stores" element={<FavoriteStores />} />
         <Route
           path="/store-recommendations"
           element={
@@ -236,6 +182,7 @@ function App() {
             )
           }
         />
+        <Route path="/notifications" element={<Notifications />} />
         <Route path="/account" element={<Account />} />
       </Route>
 

@@ -28,6 +28,8 @@
   --grey: #e5e7eb;
   --grey-hover: #d1d5db;
   --grey-text: #374151;
+  --accent-soft: #eaf6ef;
+  --danger-soft: #fdecec;
 }
 
 :root[data-theme='dark'] {
@@ -59,6 +61,8 @@
   --grey: #374151;
   --grey-hover: #4b5563;
   --grey-text: #e5e7eb;
+  --accent-soft: #1d3a2b;
+  --danger-soft: #3a1f1d;
 }
 
 * {

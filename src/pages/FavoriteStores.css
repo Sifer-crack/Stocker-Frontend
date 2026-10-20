@@ -1,0 +1,120 @@
+/* The page shell (.shopping-page, .shopping-header) comes from ShoppingList.css. */
+
+.shopping-header-actions select {
+  padding: 14px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--input-bg);
+  color: var(--text-main);
+  font-size: 16px;
+}
+
+.favorite-body {
+  padding: 36px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.favorite-body .pricing-error {
+  margin: 0;
+}
+
+.favorite-chips {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.favorite-chip {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.favorite-chip button {
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: #516456;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.favorite-chip.active {
+  border-color: var(--accent);
+  background: var(--surface-3);
+}
+
+.favorite-chip.active button {
+  color: var(--accent);
+}
+
+.favorite-chip .favorite-chip-remove {
+  padding: 12px 14px;
+  border-left: 1px solid var(--border-soft);
+  color: var(--text-faint);
+}
+
+.favorite-products-card {
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+}
+
+.favorite-search {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.favorite-search input {
+  flex: 1;
+  padding: 14px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--input-bg);
+  color: var(--text-main);
+  font-size: 16px;
+}
+
+.favorite-search button {
+  padding: 14px 22px;
+  border: none;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.favorite-add-btn {
+  padding: 8px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.favorite-add-btn:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+@media (max-width: 1100px) {
+  .favorite-body {
+    padding: 24px 20px;
+  }
+}

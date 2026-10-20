@@ -47,7 +47,7 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -215,7 +215,7 @@
 
 .theme-switch[data-on='true'] .theme-switch-thumb {
   transform: translateX(24px);
-  background: #ffffff;
+  background: var(--surface);
 }
 
 @media (max-width: 800px) {
