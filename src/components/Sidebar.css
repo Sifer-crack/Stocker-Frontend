@@ -112,25 +112,13 @@
   white-space: nowrap;
 }
 
-.nav-badge {
-  margin-left: auto;
-  min-width: 24px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-  text-align: center;
-}
-
 .sidebar-bottom {
   margin-top: auto;
   width: 280px;
 }
 
 .budget-card {
-  background: var(--accent);
+  background: #198754;
   color: #ffffff;
   border-radius: 20px;
   padding: 18px;
@@ -160,7 +148,7 @@
 .budget-progress-fill {
   width: 56%;
   height: 100%;
-  background: var(--surface);
+  background: #ffffff;
 }
 
 .budget-card span {

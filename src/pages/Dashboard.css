@@ -63,7 +63,7 @@
 }
 
 .dashboard-budget {
-  background: var(--accent);
+  background: #198754;
   color: #ffffff;
   border-radius: 28px;
   padding: 28px 36px;
@@ -103,7 +103,7 @@
 .dashboard-budget-fill {
   width: 56%;
   height: 100%;
-  background: var(--surface);
+  background: #ffffff;
 }
 
 .dashboard-budget-values {
@@ -196,7 +196,7 @@
 .compare-card p {
   margin: 0;
   max-width: 520px;
-  color: var(--border-strong);
+  color: #c8d2cb;
   font-size: 17px;
   line-height: 1.5;
 }

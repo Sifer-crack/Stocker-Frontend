@@ -1,6 +1,5 @@
 import { NavLink } from 'react-router-dom'
 import './Sidebar.css'
-import { useNotifications } from '../context/NotificationsContext'
 import { useUser } from '../context/UserContext'
 import { useWeeklySpending } from '../hooks/useWeeklySpending'
 import ExportSpendingReportButton from './ExportSpendingReportButton'
@@ -21,7 +20,6 @@ function Sidebar({
   onMouseEnter,
 }: SidebarProps) {
   const { user } = useUser()
-  const { unreadCount } = useNotifications()
   const { spent } = useWeeklySpending()
 
   const weeklyBudget = user?.groceryBudget ?? 0
@@ -34,11 +32,8 @@ function Sidebar({
     { label: 'Dashboard', path: '/dashboard' },
     { label: 'My Pantry', path: '/pantry' },
     { label: 'Shopping List', path: '/shopping-list' },
-    { label: 'Price Search', path: '/pricing' },
-    { label: 'Favorite Stores', path: '/favorite-stores' },
     { label: 'Shopping Options', path: '/store-recommendations' },
     { label: 'Shopping Route', path: '/shopping-route' },
-    { label: 'Notifications', path: '/notifications' },
   ]
 
   const className = isPeek
@@ -67,9 +62,6 @@ function Sidebar({
           >
             <span className="nav-dot"></span>
             <span className="nav-label">{item.label}</span>
-            {item.path === '/notifications' && unreadCount > 0 && (
-              <span className="nav-badge">{unreadCount}</span>
-            )}
           </NavLink>
         ))}
       </nav>
