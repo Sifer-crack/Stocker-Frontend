@@ -57,6 +57,7 @@ export interface CompareShoppingListParams {
   selectedChainId?: string
   /** Omit or leave empty for all methods. */
   allowedMethods?: FulfilmentMethod[]
+  signal?: AbortSignal
 }
 
 export function compareShoppingList(
@@ -65,6 +66,7 @@ export function compareShoppingList(
 ): Promise<CompareShoppingListResult> {
   return requestJson<CompareShoppingListResult>(`${API_BASE}/api/pricing/compare`, accessToken, {
     method: 'POST',
+    signal: params.signal,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       items: params.items,

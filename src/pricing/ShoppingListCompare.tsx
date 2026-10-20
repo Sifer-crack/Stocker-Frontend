@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.tsx'
@@ -33,6 +33,9 @@ export function ShoppingListCompare() {
   const [outcome, setOutcome] = useState<CompareOutcome | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [cancelled, setCancelled] = useState(false)
+  const controllerRef = useRef<AbortController | null>(null)
+  useEffect(() => () => controllerRef.current?.abort(), [])
 
   const stillPricing = items.filter((item) => prices[item.id]?.status === 'pending').length
 
@@ -42,7 +45,11 @@ export function ShoppingListCompare() {
     // Every method ticked means "no restriction", which the backend expresses by omitting the list.
     const allowedMethods = methods.length === FULFILMENT_METHODS.length ? [] : methods
 
+    controllerRef.current?.abort()
+    const controller = new AbortController()
+    controllerRef.current = controller
     setLoading(true)
+    setCancelled(false)
     setError(null)
     try {
       const data = await compareShoppingList(
@@ -51,6 +58,7 @@ export function ShoppingListCompare() {
           region: region.trim(),
           selectedChainId: preferredChainId || undefined,
           allowedMethods,
+          signal: controller.signal,
         },
         accessToken,
       )
@@ -62,11 +70,19 @@ export function ShoppingListCompare() {
         itemNames: Object.fromEntries(items.map((item) => [item.id, item.name])),
       })
     } catch (err) {
+      if (controller.signal.aborted) return
       setOutcome(null)
       setError(err instanceof PricingApiError ? err.message : 'Could not reach the pricing service.')
     } finally {
-      setLoading(false)
+      if (controllerRef.current === controller) setLoading(false)
     }
+  }
+
+  function handleCancel() {
+    controllerRef.current?.abort()
+    controllerRef.current = null
+    setLoading(false)
+    setCancelled(true)
   }
 
   return (
@@ -147,10 +163,17 @@ export function ShoppingListCompare() {
           <button type="submit" className="pricing-btn" disabled={loading || methods.length === 0}>
             {loading ? 'Comparing…' : 'Compare'}
           </button>
+          {loading && (
+            <button type="button" className="pricing-btn pricing-btn-secondary" onClick={handleCancel}>
+              Cancel
+            </button>
+          )}
         </form>
       )}
 
       {error && <p className="pricing-error">{error}</p>}
+
+      {cancelled && !loading && <p className="pricing-empty">Comparison cancelled.</p>}
 
       {outcome && <CompareResults outcome={outcome} />}
     </div>

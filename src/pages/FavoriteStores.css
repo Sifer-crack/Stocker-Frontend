@@ -2,10 +2,10 @@
 
 .shopping-header-actions select {
   padding: 14px 16px;
-  border: 1px solid #d7dfd4;
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
-  background: #fbfcfa;
-  color: #173022;
+  background: var(--input-bg);
+  color: var(--text-main);
   font-size: 16px;
 }
 
@@ -32,9 +32,9 @@
 .favorite-chip {
   display: flex;
   align-items: center;
-  border: 1px solid #d4ddd1;
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--surface);
   overflow: hidden;
 }
 
@@ -49,24 +49,24 @@
 }
 
 .favorite-chip.active {
-  border-color: #198754;
-  background: #e8eee8;
+  border-color: var(--accent);
+  background: var(--surface-3);
 }
 
 .favorite-chip.active button {
-  color: #198754;
+  color: var(--accent);
 }
 
 .favorite-chip .favorite-chip-remove {
   padding: 12px 14px;
-  border-left: 1px solid #e8ece6;
-  color: #879488;
+  border-left: 1px solid var(--border-soft);
+  color: var(--text-faint);
 }
 
 .favorite-products-card {
   padding: 28px;
-  background: #ffffff;
-  border: 1px solid #dfe5dc;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 24px;
 }
 
@@ -79,10 +79,10 @@
 .favorite-search input {
   flex: 1;
   padding: 14px 16px;
-  border: 1px solid #d7dfd4;
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
-  background: #fbfcfa;
-  color: #173022;
+  background: var(--input-bg);
+  color: var(--text-main);
   font-size: 16px;
 }
 
@@ -90,7 +90,7 @@
   padding: 14px 22px;
   border: none;
   border-radius: 14px;
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
   font-size: 16px;
   font-weight: 700;
@@ -99,17 +99,17 @@
 
 .favorite-add-btn {
   padding: 8px 12px;
-  border: 1px solid #d4ddd1;
+  border: 1px solid var(--border-strong);
   border-radius: 10px;
-  background: #ffffff;
-  color: #198754;
+  background: var(--surface);
+  color: var(--accent);
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .favorite-add-btn:disabled {
-  color: #879488;
+  color: var(--text-faint);
   cursor: default;
 }
 

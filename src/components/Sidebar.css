@@ -117,7 +117,7 @@
   min-width: 24px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
   font-size: 13px;
   font-weight: 700;
@@ -130,7 +130,7 @@
 }
 
 .budget-card {
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
   border-radius: 20px;
   padding: 18px;
@@ -160,7 +160,7 @@
 .budget-progress-fill {
   width: 56%;
   height: 100%;
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .budget-card span {

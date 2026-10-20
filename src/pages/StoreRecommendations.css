@@ -94,9 +94,9 @@
 }
 
 .option-card.best-option {
-  background: #198754;
+  background: var(--accent);
   color: #ffffff;
-  border-color: #198754;
+  border-color: var(--accent);
   box-shadow: 0 18px 40px rgba(25, 135, 84, 0.16);
 }
 

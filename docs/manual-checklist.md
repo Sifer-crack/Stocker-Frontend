@@ -40,6 +40,7 @@ backend stack (`integration/sprint2-manual-test`, see `docs/MANUAL_TESTING.md` i
 - [ ] Shopping-list search suggestions come from `/api/pricing/suggest` (items supermarkets stock, e.g. "Cooking wine"), show "at N stores", and focusing the empty box lists the most widely stocked products; typing quickly only keeps the last request.
 - [ ] Rename on the shopping list: Rename turns the name into an input (the button becomes Save); Enter or Save saves (the item is priced again under the new name, keeps its quantity and ticked state), Escape or clicking away cancels; renaming to an existing item name does not create a duplicate.
 - [ ] Theme button next to the account logo in the top bar: the icon shows the current theme (Sun = light, Moon = dark) and clicking switches it; the choice survives a reload.
+- [ ] Compare page: Cancel appears while comparing, stops the request and says "Comparison cancelled."; other pages in dark mode (Pantry, Dashboard, Favorite Stores, Account, Sidebar) have no light patches.
 - [ ] Compare: totals, items priced of N, unavailable item names, cheapest marked, savings positive/zero/negative.
 - [ ] Unsupported region shows the exact 422 message; no crash.
 - [ ] Picking a "compare savings against" store changes the baseline (needs the lower-case fix).
